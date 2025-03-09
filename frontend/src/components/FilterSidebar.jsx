@@ -14,6 +14,17 @@ function FilterSidebar({ activeFilters, toggleFilter }) {
           Fatal Car Accidents
         </label>
       </div>
+
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={activeFilters.shootingIncidents}
+            onChange={() => toggleFilter("shootingIncidents")}
+          />
+          Shooting Incidents
+        </label>
+      </div>
       {/* More filters will be added here */}
     </div>
   )

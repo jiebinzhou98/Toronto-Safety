@@ -1,93 +1,110 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api"
-import { useQuery } from "@apollo/client"
-import { GET_FATAL_ACCIDENTS } from "../graphql/queries"
+import { useEffect, useState } from "react";
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
+import { useQuery } from "@apollo/client";
+import { GET_FATAL_ACCIDENTS, GET_SHOOTING_INCIDENTS } from "../graphql/queries";
 
 const containerStyle = {
   width: "100%",
   height: "100vh",
-}
+};
 
-// Toronto center as default
 const center = {
   lat: 43.7001,
   lng: -79.4163,
-}
+};
 
 function MapContainer({ activeFilters, setIsLoading }) {
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
-  })
+  });
 
-  const [map, setMap] = useState(null)
-  const [selectedAccident, setSelectedAccident] = useState(null)
-  const [mapCenter, setMapCenter] = useState(center)
-  const [mapBounds, setMapBounds] = useState(null)
+  const [map, setMap] = useState(null);
+  const [selectedAccident, setSelectedAccident] = useState(null);
+  const [selectedShooting, setSelectedShooting] = useState(null);  // New state for selected shooting incident
+  const [mapCenter, setMapCenter] = useState(center);
+  const [mapBounds, setMapBounds] = useState(null);
 
   // Query fatal accidents data
-  const { loading, error, data } = useQuery(GET_FATAL_ACCIDENTS, {
+  const { loading: fatalAccidentsLoading, error: fatalAccidentsError, data: fatalAccidentsData } = useQuery(GET_FATAL_ACCIDENTS, {
     skip: !activeFilters.fatalAccidents,
     onCompleted: () => setIsLoading(false),
     onError: () => setIsLoading(false),
-  })
+  });
 
-  // Set loading state when query is in progress
+  // Query shooting incidents data
+  const { loading: shootingIncidentsLoading, error: shootingIncidentsError, data: shootingIncidentsData } = useQuery(GET_SHOOTING_INCIDENTS, {
+    skip: !activeFilters.shootingIncidents,
+    onCompleted: () => setIsLoading(false),
+    onError: () => setIsLoading(false),
+  });
+
   useEffect(() => {
-    if (loading) {
-      setIsLoading(true)
+    if (fatalAccidentsLoading || shootingIncidentsLoading) {
+      setIsLoading(true);
     } else {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [loading, setIsLoading])
+  }, [fatalAccidentsLoading, shootingIncidentsLoading, setIsLoading]);
 
-  
-
-  // When data is loaded, adjust map bounds to fit all markers
   useEffect(() => {
-    if (data && data.fatalAccidents && data.fatalAccidents.length > 0 && map) {
-      const bounds = new window.google.maps.LatLngBounds()
+    if (
+      (fatalAccidentsData && fatalAccidentsData.fatalAccidents.length > 0) ||
+      (shootingIncidentsData && shootingIncidentsData.shootingIncidents.length > 0)
+    ) {
+      if (map) {
+        const bounds = new window.google.maps.LatLngBounds();
 
-      data.fatalAccidents.forEach((accident) => {
-        if (accident.LATITUDE && accident.LONGITUDE) {
-          bounds.extend({
-            lat: accident.LATITUDE,
-            lng: accident.LONGITUDE,
-          })
-        }
-      })
+        fatalAccidentsData?.fatalAccidents.forEach((accident) => {
+          if (accident.LATITUDE && accident.LONGITUDE) {
+            bounds.extend({
+              lat: accident.LATITUDE,
+              lng: accident.LONGITUDE,
+            });
+          }
+        });
 
-      map.fitBounds(bounds)
-      setMapBounds(bounds)
+        shootingIncidentsData?.shootingIncidents.forEach((incident) => {
+          if (incident.LAT_WGS84 && incident.LONG_WGS84) {
+            bounds.extend({
+              lat: incident.LAT_WGS84,
+              lng: incident.LONG_WGS84,
+            });
+          }
+        });
 
-      // Calculate center from bounds
-      const center = {
-        lat: (bounds.getNorthEast().lat() + bounds.getSouthWest().lat()) / 2,
-        lng: (bounds.getNorthEast().lng() + bounds.getSouthWest().lng()) / 2,
+        map.fitBounds(bounds);
+        setMapBounds(bounds);
+
+        const center = {
+          lat: (bounds.getNorthEast().lat() + bounds.getSouthWest().lat()) / 2,
+          lng: (bounds.getNorthEast().lng() + bounds.getSouthWest().lng()) / 2,
+        };
+        setMapCenter(center);
       }
-      setMapCenter(center)
     }
-  }, [data, map])
+  }, [fatalAccidentsData, shootingIncidentsData, map]);
 
   const onLoad = (map) => {
-    setMap(map)
-  }
+    setMap(map);
+  };
 
   const onUnmount = () => {
-    setMap(null)
-  }
+    setMap(null);
+  };
 
-  if (!isLoaded) return <div>Loading Maps...</div>
-  if (loading) return <div>Loading accident data...</div>
-  if (error) return <div>Error loading data: {error.message}</div>
+  if (!isLoaded) return <div>Loading Maps...</div>;
+  if (fatalAccidentsLoading || shootingIncidentsLoading) return <div>Loading data...</div>;
+  if (fatalAccidentsError || shootingIncidentsError) return <div>Error loading data: {fatalAccidentsError?.message || shootingIncidentsError?.message}</div>;
 
   return (
     <div style={{ flex: 1 }}>
       <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={10} onLoad={onLoad} onUnmount={onUnmount}>
+        {/* Display Fatal Accident Markers */}
         {activeFilters.fatalAccidents &&
-          data?.fatalAccidents.map((accident) =>
+          fatalAccidentsData?.fatalAccidents.map((accident) =>
             accident.LATITUDE && accident.LONGITUDE ? (
               <Marker
                 key={accident._id}
@@ -101,9 +118,29 @@ function MapContainer({ activeFilters, setIsLoading }) {
                   scaledSize: new window.google.maps.Size(30, 30),
                 }}
               />
-            ) : null,
+            ) : null
           )}
 
+        {/* Display Shooting Incident Markers */}
+        {activeFilters.shootingIncidents &&
+          shootingIncidentsData?.shootingIncidents.map((incident) =>
+            incident.LAT_WGS84 && incident.LONG_WGS84 ? (
+              <Marker
+                key={incident._id}
+                position={{
+                  lat: incident.LAT_WGS84,
+                  lng: incident.LONG_WGS84,
+                }}
+                onClick={() => setSelectedShooting(incident)}
+                icon={{
+                  url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",  // Custom color for shooting incidents
+                  scaledSize: new window.google.maps.Size(30, 30),
+                }}
+              />
+            ) : null
+          )}
+
+        {/* InfoWindow for selected Fatal Accident */}
         {selectedAccident && (
           <InfoWindow
             position={{
@@ -126,10 +163,29 @@ function MapContainer({ activeFilters, setIsLoading }) {
             </div>
           </InfoWindow>
         )}
+
+        {/* InfoWindow for selected Shooting Incident */}
+        {selectedShooting && (
+          <InfoWindow
+            position={{
+              lat: selectedShooting.LAT_WGS84,
+              lng: selectedShooting.LONG_WGS84,
+            }}
+            onCloseClick={() => setSelectedShooting(null)}
+          >
+            <div>
+              <h3>Shooting Incident</h3>
+              <p>Event ID: {selectedShooting.EVENT_UNIQUE_ID}</p>
+              <p>Date: {selectedShooting.OCC_DATE}</p>
+              <p>Division: {selectedShooting.DIVISION}</p>
+              <p>Death: {selectedShooting.DEATH}</p>
+              <p>Injuries: {selectedShooting.INJURIES}</p>
+            </div>
+          </InfoWindow>
+        )}
       </GoogleMap>
     </div>
-  )
+  );
 }
 
-export default MapContainer
-
+export default MapContainer;

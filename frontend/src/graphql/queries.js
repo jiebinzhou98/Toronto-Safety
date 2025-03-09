@@ -58,3 +58,32 @@ export const GET_FATAL_ACCIDENTS_BY_DISTRICT = gql`
   }
 `
 
+export const GET_SHOOTING_INCIDENTS = gql`
+  query GetShootingIncidents {
+    shootingIncidents {
+      _id
+      EVENT_UNIQUE_ID
+      OCC_DATE
+      DIVISION
+      DEATH
+      INJURIES
+      LAT_WGS84
+      LONG_WGS84
+    }
+  }
+`;
+
+export const GET_SHOOTING_INCIDENTS_BY_DIVISION = gql`
+  query GetShootingIncidentsByDivision($division: String!) {
+    shootingIncidentsByDivision(division: $division) {
+      _id
+      EVENT_UNIQUE_ID
+      OCC_DATE
+      DIVISION
+      DEATH
+      INJURIES
+      LAT_WGS84
+      LONG_WGS84
+    }
+  }
+`;
