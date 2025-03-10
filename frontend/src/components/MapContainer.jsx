@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
 import { useQuery } from "@apollo/client";
-import { GET_FATAL_ACCIDENTS, GET_SHOOTING_INCIDENTS, GET_HOMICIDES, GET_BREAK_AND_ENTER_INCIDENTS } from "../graphql/queries";
+import { GET_FATAL_ACCIDENTS, GET_SHOOTING_INCIDENTS, GET_HOMICIDES, GET_BREAK_AND_ENTER_INCIDENTS, GET_PEDESTRIAN_KSI } from "../graphql/queries";
 
 const containerStyle = {
   width: "100%",
@@ -24,8 +24,9 @@ function MapContainer({ activeFilters, setIsLoading }) {
   const [map, setMap] = useState(null);
   const [selectedAccident, setSelectedAccident] = useState(null);
   const [selectedShooting, setSelectedShooting] = useState(null);
-  const [selectedHomicide, setSelectedHomicide] = useState(null);  // New state for selected homicide
-  const [selectedBreakAndEnter, setSelectedBreakAndEnter] = useState(null);  // New state for selected Break and Enter
+  const [selectedHomicide, setSelectedHomicide] = useState(null);
+  const [selectedBreakAndEnter, setSelectedBreakAndEnter] = useState(null);
+  const [selectedPedestrianKSI, setSelectedPedestrianKSI] = useState(null);  // New state for selected Pedestrian KSI
   const [mapCenter, setMapCenter] = useState(center);
   const [mapBounds, setMapBounds] = useState(null);
 
@@ -57,22 +58,30 @@ function MapContainer({ activeFilters, setIsLoading }) {
     onError: () => setIsLoading(false),
   });
 
+  // Query pedestrian KSI data
+  const { loading: pedestrianKSILoading, error: pedestrianKSIError, data: pedestrianKSIData } = useQuery(GET_PEDESTRIAN_KSI, {
+    skip: !activeFilters.pedestrianKSI,
+    onCompleted: () => setIsLoading(false),
+    onError: () => setIsLoading(false),
+  });
+
   useEffect(() => {
     if (
-      fatalAccidentsLoading || shootingIncidentsLoading || homicidesLoading || breakAndEnterLoading
+      fatalAccidentsLoading || shootingIncidentsLoading || homicidesLoading || breakAndEnterLoading || pedestrianKSILoading
     ) {
       setIsLoading(true);
     } else {
       setIsLoading(false);
     }
-  }, [fatalAccidentsLoading, shootingIncidentsLoading, homicidesLoading, breakAndEnterLoading, setIsLoading]);
+  }, [fatalAccidentsLoading, shootingIncidentsLoading, homicidesLoading, breakAndEnterLoading, pedestrianKSILoading, setIsLoading]);
 
   useEffect(() => {
     if (
       (fatalAccidentsData && fatalAccidentsData.fatalAccidents.length > 0) ||
       (shootingIncidentsData && shootingIncidentsData.shootingIncidents.length > 0) ||
       (homicidesData && homicidesData.homicides.length > 0) ||
-      (breakAndEnterData && breakAndEnterData.breakAndEnterIncidents.length > 0)
+      (breakAndEnterData && breakAndEnterData.breakAndEnterIncidents.length > 0) ||
+      (pedestrianKSIData && pedestrianKSIData.pedestrianKSI.length > 0)
     ) {
       if (map) {
         const bounds = new window.google.maps.LatLngBounds();
@@ -113,6 +122,15 @@ function MapContainer({ activeFilters, setIsLoading }) {
           }
         });
 
+        pedestrianKSIData?.pedestrianKSI.forEach((incident) => {
+          if (incident.LATITUDE && incident.LONGITUDE) {
+            bounds.extend({
+              lat: incident.LATITUDE,
+              lng: incident.LONGITUDE,
+            });
+          }
+        });
+
         map.fitBounds(bounds);
         setMapBounds(bounds);
 
@@ -123,7 +141,7 @@ function MapContainer({ activeFilters, setIsLoading }) {
         setMapCenter(center);
       }
     }
-  }, [fatalAccidentsData, shootingIncidentsData, homicidesData, breakAndEnterData, map]);
+  }, [fatalAccidentsData, shootingIncidentsData, homicidesData, breakAndEnterData, pedestrianKSIData, map]);
 
   const onLoad = (map) => {
     setMap(map);
@@ -134,8 +152,8 @@ function MapContainer({ activeFilters, setIsLoading }) {
   };
 
   if (!isLoaded) return <div>Loading Maps...</div>;
-  if (fatalAccidentsLoading || shootingIncidentsLoading || homicidesLoading || breakAndEnterLoading) return <div>Loading data...</div>;
-  if (fatalAccidentsError || shootingIncidentsError || homicidesError || breakAndEnterError) return <div>Error loading data: {fatalAccidentsError?.message || shootingIncidentsError?.message || homicidesError?.message || breakAndEnterError?.message}</div>;
+  if (fatalAccidentsLoading || shootingIncidentsLoading || homicidesLoading || breakAndEnterLoading || pedestrianKSILoading) return <div>Loading data...</div>;
+  if (fatalAccidentsError || shootingIncidentsError || homicidesError || breakAndEnterError || pedestrianKSIError) return <div>Error loading data: {fatalAccidentsError?.message || shootingIncidentsError?.message || homicidesError?.message || breakAndEnterError?.message || pedestrianKSIError?.message}</div>;
 
   return (
     <div style={{ flex: 1 }}>
@@ -210,6 +228,25 @@ function MapContainer({ activeFilters, setIsLoading }) {
                 onClick={() => setSelectedBreakAndEnter(incident)}  // Set selected Break and Enter incident
                 icon={{
                   url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",  // Custom color for Break and Enter incidents
+                  scaledSize: new window.google.maps.Size(30, 30),
+                }}
+              />
+            ) : null
+          )}
+
+        {/* Display Pedestrian KSI Incident Markers */}
+        {activeFilters.pedestrianKSI &&
+          pedestrianKSIData?.pedestrianKSI.map((incident) =>
+            incident.LATITUDE && incident.LONGITUDE ? (
+              <Marker
+                key={incident._id}
+                position={{
+                  lat: incident.LATITUDE,
+                  lng: incident.LONGITUDE,
+                }}
+                onClick={() => setSelectedPedestrianKSI(incident)}  // Set selected Pedestrian KSI incident
+                icon={{
+                  url: "http://maps.google.com/mapfiles/ms/icons/purple-dot.png",  // Custom color for Pedestrian KSI incidents
                   scaledSize: new window.google.maps.Size(30, 30),
                 }}
               />
@@ -297,6 +334,25 @@ function MapContainer({ activeFilters, setIsLoading }) {
               <p>Offense: {selectedBreakAndEnter.OFFENCE}</p>
               <p>Death: {selectedBreakAndEnter.DEATH}</p>
               <p>Injuries: {selectedBreakAndEnter.INJURIES}</p>
+            </div>
+          </InfoWindow>
+        )}
+
+        {/* InfoWindow for selected Pedestrian KSI Incident */}
+        {selectedPedestrianKSI && (
+          <InfoWindow
+            position={{
+              lat: selectedPedestrianKSI.LATITUDE,
+              lng: selectedPedestrianKSI.LONGITUDE,
+            }}
+            onCloseClick={() => setSelectedPedestrianKSI(null)}
+          >
+            <div>
+              <h3>Pedestrian KSI Incident</h3>
+              <p>Date: {selectedPedestrianKSI.DATE}</p>
+              <p>Location: {selectedPedestrianKSI.STREET1} & {selectedPedestrianKSI.STREET2}</p>
+              <p>Division: {selectedPedestrianKSI.DIVISION}</p>
+              <p>Injury: {selectedPedestrianKSI.INJURY}</p>
             </div>
           </InfoWindow>
         )}

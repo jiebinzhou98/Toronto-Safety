@@ -108,7 +108,6 @@ export const GET_HOMICIDES = gql`
   }
 `;
 
-
 // Get homicides by division
 export const GET_HOMICIDES_BY_DIVISION = gql`
   query GetHomicidesByDivision($division: String!) {
@@ -125,7 +124,6 @@ export const GET_HOMICIDES_BY_DIVISION = gql`
     }
   }
 `;
-
 
 // Get all break and enter incidents
 export const GET_BREAK_AND_ENTER_INCIDENTS = gql`
@@ -179,6 +177,56 @@ export const GET_BREAK_AND_ENTER_INCIDENTS_BY_NEIGHBORHOOD = gql`
       INJURIES
       LAT_WGS84
       LONG_WGS84
+      x
+      y
+    }
+  }
+`;
+
+// Get all pedestrian KSI incidents
+export const GET_PEDESTRIAN_KSI = gql`
+  query GetPedestrianKSI {
+    pedestrianKSI {
+      _id
+      OBJECTID
+      DATE
+      STREET1
+      STREET2
+      LATITUDE
+      LONGITUDE
+      VISIBILITY
+      LIGHT
+      IMPACTYPE
+      PEDESTRIAN
+      INJURY
+      DIVISION
+      NEIGHBOURHOOD_158
+      HOOD_158
+      x
+      y
+    }
+  }
+`;
+
+// Get pedestrian KSI incidents by neighborhood
+export const GET_PEDESTRIAN_KSI_BY_NEIGHBORHOOD = gql`
+  query GetPedestrianKSIByNeighborhood($neighborhood: String!) {
+    pedestrianKSIByNeighborhood(neighborhood: $neighborhood) {
+      _id
+      OBJECTID
+      DATE
+      STREET1
+      STREET2
+      LATITUDE
+      LONGITUDE
+      VISIBILITY
+      LIGHT
+      IMPACTYPE
+      PEDESTRIAN
+      INJURY
+      DIVISION
+      NEIGHBOURHOOD_158
+      HOOD_158
       x
       y
     }

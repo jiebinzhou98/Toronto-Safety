@@ -47,6 +47,18 @@ function FilterSidebar({ activeFilters, toggleFilter }) {
           Break and Enter Incidents
         </label>
       </div>
+
+      {/* Adding the Pedestrian KSI filter */}
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={activeFilters.pedestrianKSI}
+            onChange={() => toggleFilter("pedestrianKSI")}
+          />
+          Pedestrian KSI Incidents
+        </label>
+      </div>
     </div>
   );
 }

@@ -73,6 +73,27 @@ const typeDefs = `#graphql
     y: Float
   }
 
+  type PedestrianKSI {
+    _id: ID
+    OBJECTID: Int
+    DATE: String
+    STREET1: String
+    STREET2: String
+    LATITUDE: Float
+    LONGITUDE: Float
+    VISIBILITY: String
+    LIGHT: String
+    IMPACTYPE: String
+    PEDESTRIAN: String
+    INJURY: String
+    DIVISION: String
+    NEIGHBOURHOOD_158: String
+    HOOD_158: Int
+    x: Float
+    y: Float
+  }
+
+
   type Query {
     fatalAccidents: [FatalAccident]
     fatalAccidentsByDistrict(district: String): [FatalAccident]
@@ -85,6 +106,9 @@ const typeDefs = `#graphql
 
     breakAndEnterIncidents: [BreakAndEnterIncident]
     breakAndEnterIncidentsByNeighborhood(neighborhood: String): [BreakAndEnterIncident]
+
+    pedestrianKSI: [PedestrianKSI]
+    pedestrianKSIByNeighborhood(neighborhood: String): [PedestrianKSI]
   }
 `;
 
