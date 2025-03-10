@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
 import { useQuery } from "@apollo/client";
-import { GET_FATAL_ACCIDENTS, GET_SHOOTING_INCIDENTS } from "../graphql/queries";
+import { GET_FATAL_ACCIDENTS, GET_SHOOTING_INCIDENTS, GET_HOMICIDES } from "../graphql/queries";
 
 const containerStyle = {
   width: "100%",
@@ -23,7 +23,8 @@ function MapContainer({ activeFilters, setIsLoading }) {
 
   const [map, setMap] = useState(null);
   const [selectedAccident, setSelectedAccident] = useState(null);
-  const [selectedShooting, setSelectedShooting] = useState(null);  // New state for selected shooting incident
+  const [selectedShooting, setSelectedShooting] = useState(null);
+  const [selectedHomicide, setSelectedHomicide] = useState(null);  // New state for selected homicide
   const [mapCenter, setMapCenter] = useState(center);
   const [mapBounds, setMapBounds] = useState(null);
 
@@ -41,18 +42,26 @@ function MapContainer({ activeFilters, setIsLoading }) {
     onError: () => setIsLoading(false),
   });
 
+  // Query homicide data
+  const { loading: homicidesLoading, error: homicidesError, data: homicidesData } = useQuery(GET_HOMICIDES, {
+    skip: !activeFilters.homicides,
+    onCompleted: () => setIsLoading(false),
+    onError: () => setIsLoading(false),
+  });
+
   useEffect(() => {
-    if (fatalAccidentsLoading || shootingIncidentsLoading) {
+    if (fatalAccidentsLoading || shootingIncidentsLoading || homicidesLoading) {
       setIsLoading(true);
     } else {
       setIsLoading(false);
     }
-  }, [fatalAccidentsLoading, shootingIncidentsLoading, setIsLoading]);
+  }, [fatalAccidentsLoading, shootingIncidentsLoading, homicidesLoading, setIsLoading]);
 
   useEffect(() => {
     if (
       (fatalAccidentsData && fatalAccidentsData.fatalAccidents.length > 0) ||
-      (shootingIncidentsData && shootingIncidentsData.shootingIncidents.length > 0)
+      (shootingIncidentsData && shootingIncidentsData.shootingIncidents.length > 0) ||
+      (homicidesData && homicidesData.homicides.length > 0)
     ) {
       if (map) {
         const bounds = new window.google.maps.LatLngBounds();
@@ -75,6 +84,15 @@ function MapContainer({ activeFilters, setIsLoading }) {
           }
         });
 
+        homicidesData?.homicides.forEach((homicide) => {
+          if (homicide.LAT_WGS84 && homicide.LONG_WGS84) {
+            bounds.extend({
+              lat: homicide.LAT_WGS84,
+              lng: homicide.LONG_WGS84,
+            });
+          }
+        });
+
         map.fitBounds(bounds);
         setMapBounds(bounds);
 
@@ -85,7 +103,7 @@ function MapContainer({ activeFilters, setIsLoading }) {
         setMapCenter(center);
       }
     }
-  }, [fatalAccidentsData, shootingIncidentsData, map]);
+  }, [fatalAccidentsData, shootingIncidentsData, homicidesData, map]);
 
   const onLoad = (map) => {
     setMap(map);
@@ -96,8 +114,8 @@ function MapContainer({ activeFilters, setIsLoading }) {
   };
 
   if (!isLoaded) return <div>Loading Maps...</div>;
-  if (fatalAccidentsLoading || shootingIncidentsLoading) return <div>Loading data...</div>;
-  if (fatalAccidentsError || shootingIncidentsError) return <div>Error loading data: {fatalAccidentsError?.message || shootingIncidentsError?.message}</div>;
+  if (fatalAccidentsLoading || shootingIncidentsLoading || homicidesLoading) return <div>Loading data...</div>;
+  if (fatalAccidentsError || shootingIncidentsError || homicidesError) return <div>Error loading data: {fatalAccidentsError?.message || shootingIncidentsError?.message || homicidesError?.message}</div>;
 
   return (
     <div style={{ flex: 1 }}>
@@ -134,6 +152,25 @@ function MapContainer({ activeFilters, setIsLoading }) {
                 onClick={() => setSelectedShooting(incident)}
                 icon={{
                   url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",  // Custom color for shooting incidents
+                  scaledSize: new window.google.maps.Size(30, 30),
+                }}
+              />
+            ) : null
+          )}
+
+        {/* Display Homicide Markers */}
+        {activeFilters.homicides &&
+          homicidesData?.homicides.map((homicide) =>
+            homicide.LAT_WGS84 && homicide.LONG_WGS84 ? (
+              <Marker
+                key={homicide._id}
+                position={{
+                  lat: homicide.LAT_WGS84,
+                  lng: homicide.LONG_WGS84,
+                }}
+                onClick={() => setSelectedHomicide(homicide)}  // Set selected homicide
+                icon={{
+                  url: "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png",  // Custom color for homicide incidents
                   scaledSize: new window.google.maps.Size(30, 30),
                 }}
               />
@@ -180,6 +217,26 @@ function MapContainer({ activeFilters, setIsLoading }) {
               <p>Division: {selectedShooting.DIVISION}</p>
               <p>Death: {selectedShooting.DEATH}</p>
               <p>Injuries: {selectedShooting.INJURIES}</p>
+            </div>
+          </InfoWindow>
+        )}
+
+        {/* InfoWindow for selected Homicide */}
+        {selectedHomicide && (
+          <InfoWindow
+            position={{
+              lat: selectedHomicide.LAT_WGS84,
+              lng: selectedHomicide.LONG_WGS84,
+            }}
+            onCloseClick={() => setSelectedHomicide(null)}
+          >
+            <div>
+              <h3>Homicide</h3>
+              <p>Event ID: {selectedHomicide.EVENT_UNIQUE_ID}</p>
+              <p>Date: {selectedHomicide.OCC_DATE}</p>
+              <p>Division: {selectedHomicide.DIVISION}</p>
+              <p>Death: {selectedHomicide.DEATH}</p>
+              <p>Injuries: {selectedHomicide.INJURIES}</p>
             </div>
           </InfoWindow>
         )}

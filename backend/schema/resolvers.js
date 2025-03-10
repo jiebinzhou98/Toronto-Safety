@@ -1,5 +1,6 @@
 const FatalAccident = require("../models/FatalAccident");
 const ShootingIncident = require("../models/ShootingIncidents");
+const Homicide = require("../models/Homicide");
 
 const resolvers = {
   Query: {
@@ -49,6 +50,26 @@ const resolvers = {
       } catch (error) {
         console.error(`Error fetching shooting incidents in division ${division}:`, error);
         throw new Error(`Error fetching shooting incidents by division: ${error.message}`);
+      }
+    },
+
+    homicides: async () => {
+      try {
+        const homicides = await Homicide.find({});
+        return homicides;
+      } catch (error) {
+        console.error("Error fetching homicides:", error);
+        throw new Error("Error fetching homicides");
+      }
+    },
+    // Query for homicides by division
+    homicidesByDivision: async (_, { division }) => {
+      try {
+        const homicides = await Homicide.find({ DIVISION: division });
+        return homicides;
+      } catch (error) {
+        console.error(`Error fetching homicides in division ${division}:`, error);
+        throw new Error(`Error fetching homicides by division: ${error.message}`);
       }
     },
   },

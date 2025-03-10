@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 function FilterSidebar({ activeFilters, toggleFilter }) {
   return (
@@ -25,10 +25,19 @@ function FilterSidebar({ activeFilters, toggleFilter }) {
           Shooting Incidents
         </label>
       </div>
-      {/* More filters will be added here */}
+
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={activeFilters.homicides}
+            onChange={() => toggleFilter("homicides")}
+          />
+          Homicides
+        </label>
+      </div>
     </div>
-  )
+  );
 }
 
-export default FilterSidebar
-
+export default FilterSidebar;

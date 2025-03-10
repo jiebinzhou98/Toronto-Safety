@@ -1,5 +1,6 @@
-import { gql } from "@apollo/client"
+import { gql } from "@apollo/client";
 
+// Get all fatal accidents
 export const GET_FATAL_ACCIDENTS = gql`
   query GetFatalAccidents {
     fatalAccidents {
@@ -27,8 +28,9 @@ export const GET_FATAL_ACCIDENTS = gql`
       VISIBILITY
     }
   }
-`
+`;
 
+// Get fatal accidents by district
 export const GET_FATAL_ACCIDENTS_BY_DISTRICT = gql`
   query GetFatalAccidentsByDistrict($district: String!) {
     fatalAccidentsByDistrict(district: $district) {
@@ -56,8 +58,9 @@ export const GET_FATAL_ACCIDENTS_BY_DISTRICT = gql`
       VISIBILITY
     }
   }
-`
+`;
 
+// Get all shooting incidents
 export const GET_SHOOTING_INCIDENTS = gql`
   query GetShootingIncidents {
     shootingIncidents {
@@ -73,10 +76,45 @@ export const GET_SHOOTING_INCIDENTS = gql`
   }
 `;
 
+// Get shooting incidents by division
 export const GET_SHOOTING_INCIDENTS_BY_DIVISION = gql`
   query GetShootingIncidentsByDivision($division: String!) {
     shootingIncidentsByDivision(division: $division) {
       _id
+      EVENT_UNIQUE_ID
+      OCC_DATE
+      DIVISION
+      DEATH
+      INJURIES
+      LAT_WGS84
+      LONG_WGS84
+    }
+  }
+`;
+
+export const GET_HOMICIDES = gql`
+  query GetHomicides {
+    homicides {
+      _id
+      OBJECTID
+      EVENT_UNIQUE_ID
+      OCC_DATE
+      DIVISION
+      DEATH
+      INJURIES
+      LAT_WGS84
+      LONG_WGS84
+    }
+  }
+`;
+
+
+// Get homicides by division
+export const GET_HOMICIDES_BY_DIVISION = gql`
+  query GetHomicidesByDivision($division: String!) {
+    homicidesByDivision(division: $division) {
+      _id
+      OBJECTID
       EVENT_UNIQUE_ID
       OCC_DATE
       DIVISION
