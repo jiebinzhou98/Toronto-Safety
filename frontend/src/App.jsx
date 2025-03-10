@@ -17,6 +17,7 @@ function App() {
     fatalAccidents: false,
     shootingIncidents: false,
     homicides: false,
+    breakAndEnterIncidents: false,
   })
   const [isLoading, setIsLoading] = useState(false)
 

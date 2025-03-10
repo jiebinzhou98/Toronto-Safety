@@ -1,6 +1,7 @@
 const FatalAccident = require("../models/FatalAccident");
 const ShootingIncident = require("../models/ShootingIncidents");
 const Homicide = require("../models/Homicide");
+const BreakAndEnterIncident = require("../models/BreakAndEnter");
 
 const resolvers = {
   Query: {
@@ -70,6 +71,28 @@ const resolvers = {
       } catch (error) {
         console.error(`Error fetching homicides in division ${division}:`, error);
         throw new Error(`Error fetching homicides by division: ${error.message}`);
+      }
+    },
+
+    // Query for all break and enter incidents
+    breakAndEnterIncidents: async () => {
+      try {
+        const incidents = await BreakAndEnterIncident.find({});  // Updated model reference
+        return incidents;
+      } catch (error) {
+        console.error("Error fetching break and enter incidents:", error);
+        throw new Error("Error fetching break and enter incidents");
+      }
+    },
+
+    // Query for break and enter incidents by neighborhood
+    breakAndEnterIncidentsByNeighborhood: async (_, { neighborhood }) => {
+      try {
+        const incidents = await BreakAndEnterIncident.find({ NEIGHBOURHOOD_158: neighborhood });  // Updated model reference
+        return incidents;
+      } catch (error) {
+        console.error(`Error fetching break and enter incidents by neighborhood ${neighborhood}:`, error);
+        throw new Error(`Error fetching break and enter incidents by neighborhood: ${error.message}`);
       }
     },
   },

@@ -125,3 +125,62 @@ export const GET_HOMICIDES_BY_DIVISION = gql`
     }
   }
 `;
+
+
+// Get all break and enter incidents
+export const GET_BREAK_AND_ENTER_INCIDENTS = gql`
+  query GetBreakAndEnterIncidents {
+    breakAndEnterIncidents {
+      _id
+      OBJECTID
+      EVENT_UNIQUE_ID
+      OCC_DATE
+      OCC_YEAR
+      OCC_MONTH
+      OCC_DOW
+      OCC_DOY
+      OCC_DAY
+      OCC_HOUR
+      DIVISION
+      LOCATION_TYPE
+      UCR_CODE
+      UCR_EXT
+      OFFENCE
+      DEATH
+      INJURIES
+      LAT_WGS84
+      LONG_WGS84
+      x
+      y
+    }
+  }
+`;
+
+// Get break and enter incidents by neighborhood
+export const GET_BREAK_AND_ENTER_INCIDENTS_BY_NEIGHBORHOOD = gql`
+  query GetBreakAndEnterIncidentsByNeighborhood($neighborhood: String!) {
+    breakAndEnterIncidentsByNeighborhood(neighborhood: $neighborhood) {
+      _id
+      OBJECTID
+      EVENT_UNIQUE_ID
+      OCC_DATE
+      OCC_YEAR
+      OCC_MONTH
+      OCC_DOW
+      OCC_DOY
+      OCC_DAY
+      OCC_HOUR
+      DIVISION
+      LOCATION_TYPE
+      UCR_CODE
+      UCR_EXT
+      OFFENCE
+      DEATH
+      INJURIES
+      LAT_WGS84
+      LONG_WGS84
+      x
+      y
+    }
+  }
+`;

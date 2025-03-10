@@ -36,6 +36,17 @@ function FilterSidebar({ activeFilters, toggleFilter }) {
           Homicides
         </label>
       </div>
+
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={activeFilters.breakAndEnterIncidents} // Adding break and enter checkbox
+            onChange={() => toggleFilter("breakAndEnterIncidents")} // Updating to handle the new filter
+          />
+          Break and Enter Incidents
+        </label>
+      </div>
     </div>
   );
 }

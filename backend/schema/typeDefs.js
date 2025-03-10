@@ -49,6 +49,30 @@ const typeDefs = `#graphql
     LONG_WGS84: Float
   }
 
+  type BreakAndEnterIncident {
+    _id: ID
+    OBJECTID: Int
+    EVENT_UNIQUE_ID: String
+    OCC_DATE: String
+    OCC_YEAR: Int
+    OCC_MONTH: String
+    OCC_DOW: String
+    OCC_DOY: Int
+    OCC_DAY: Int
+    OCC_HOUR: Int
+    DIVISION: String
+    LOCATION_TYPE: String
+    UCR_CODE: Int
+    UCR_EXT: Int
+    OFFENCE: String
+    DEATH: String
+    INJURIES: String
+    LAT_WGS84: Float
+    LONG_WGS84: Float
+    x: Float
+    y: Float
+  }
+
   type Query {
     fatalAccidents: [FatalAccident]
     fatalAccidentsByDistrict(district: String): [FatalAccident]
@@ -58,6 +82,9 @@ const typeDefs = `#graphql
 
     homicides: [Homicide]
     homicidesByDivision(division: String): [Homicide]
+
+    breakAndEnterIncidents: [BreakAndEnterIncident]
+    breakAndEnterIncidentsByNeighborhood(neighborhood: String): [BreakAndEnterIncident]
   }
 `;
 
