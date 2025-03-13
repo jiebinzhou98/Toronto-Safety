@@ -1,5 +1,3 @@
-// typedefs.js
-
 const typeDefs = `#graphql
   type FatalAccident {
     _id: ID
@@ -92,6 +90,27 @@ const typeDefs = `#graphql
     x: Float
     y: Float
   }
+
+  type User {
+    _id: ID!
+    username: String!  # Added username field
+    email: String!
+    role: String!
+  }
+
+  type AuthPayload {
+    token: String!
+    user: User!
+  }
+
+type Mutation {
+  # Register a user
+  registerUser(email: String!, password: String!, username: String!, role: String): User
+
+  # Login a user
+  loginUser(email: String!, password: String!): AuthPayload
+}
+
 
 
   type Query {

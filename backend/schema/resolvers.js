@@ -1,3 +1,7 @@
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+
 const FatalAccident = require("../models/FatalAccident");
 const ShootingIncident = require("../models/ShootingIncidents");
 const Homicide = require("../models/Homicide");
@@ -109,6 +113,53 @@ const resolvers = {
         console.error(`Error fetching pedestrian KSI incidents by neighborhood ${neighborhood}:`, error);
         throw new Error("Error fetching pedestrian KSI incidents by neighborhood");
       }
+    },
+  },
+  Mutation: {
+    // Register a new user
+    registerUser: async (_, { username, email, password, role }) => {
+      // Check if the user already exists
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        throw new Error('User already exists');
+      }
+
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create a new user with hashed password
+      const user = new User({
+        username,
+        email,
+        password: hashedPassword,  // Store the hashed password
+        role: role || 'User', // Default role is 'User'
+      });
+
+      await user.save();
+      return user;  // Return the user object after it's saved
+    },
+
+    // Login user
+    loginUser: async (_, { email, password }) => {
+      // Find the user by email
+      const user = await User.findOne({ email });
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Compare the password with the stored hashed password
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        throw new Error('Invalid credentials');
+      }
+
+      const token = jwt.sign(
+        { id: user._id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      return { token, user };  // Return JWT token and user details
     },
   },
 };
