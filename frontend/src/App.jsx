@@ -6,7 +6,7 @@ import FilterSidebar from "./components/FilterSidebar"
 import LoadingIndicator from "./components/LoadingIndicator"
 import Navbar from "./components/Navbar"
 import DivisionFilter from "./components/DivisionFilter"
-import { SignedIn, SignedOut, SignInButton, SignOutButton } from "@clerk/clerk-react"
+import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react"
 
 // Create Apollo Client
 const client = new ApolloClient({
@@ -68,14 +68,6 @@ function App() {
                   dateRange={dateRange}
                   setIsLoading={setIsLoading}
                 />
-
-                <div style={{ marginTop: "20px" }}>
-                  <SignOutButton>
-                    <button style={{ padding: "10px", backgroundColor: "#e74c3c", color: "white", border: "none", borderRadius: "4px" }}>
-                      Sign Out
-                    </button>
-                  </SignOutButton>
-                </div>
               </div>
             </div>
 
