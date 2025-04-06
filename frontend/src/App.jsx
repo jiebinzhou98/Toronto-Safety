@@ -1,18 +1,129 @@
-import { useState } from "react"
-import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client"
-import { BrowserRouter as Router } from "react-router-dom"
-import MapContainer from "./components/MapContainer"
-import FilterSidebar from "./components/FilterSidebar"
-import LoadingIndicator from "./components/LoadingIndicator"
-import Navbar from "./components/Navbar"
-import DivisionFilter from "./components/DivisionFilter"
-import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react"
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { SignedIn, SignedOut, useAuth, RedirectToSignIn } from '@clerk/clerk-react';
+import { ApolloProvider, ApolloClient, InMemoryCache, from } from '@apollo/client';
+import { onError } from '@apollo/client/link/error';
+import { RetryLink } from '@apollo/client/link/retry';
+import { HttpLink } from '@apollo/client/link/http';
+import Navbar from './components/Navbar';
+import MapContainer from './components/MapContainer';
+import FilterSidebar from './components/FilterSidebar';
+import LoadingIndicator from './components/LoadingIndicator';
+import DivisionFilter from './components/DivisionFilter';
+import IntelligentAnalysis from './components/IntelligentAnalysis';
+import WeatherSafety from './components/WeatherSafety';
+import { Box, Button, Typography, Paper } from '@mui/material';
+import LoginIcon from '@mui/icons-material/Login';
+import './App.css';
+
+// Create error handling link
+const errorLink = onError(({ graphQLErrors, networkError }) => {
+  if (graphQLErrors)
+    graphQLErrors.forEach(({ message, locations, path }) =>
+      console.log(
+        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
+      )
+    );
+  if (networkError) console.log(`[Network error]: ${networkError}`);
+});
+
+// Create retry link
+const retryLink = new RetryLink({
+  delay: {
+    initial: 300,
+    max: 3000,
+    jitter: true
+  },
+  attempts: {
+    max: 5,
+    retryIf: (error, _operation) => !!error
+  }
+});
+
+// Create HTTP link
+const httpLink = new HttpLink({
+  uri: 'http://localhost:5000/graphql',
+  credentials: 'same-origin'
+});
 
 // Create Apollo Client
 const client = new ApolloClient({
-  uri: "http://localhost:5000/graphql",
+  link: from([errorLink, retryLink, httpLink]),
   cache: new InMemoryCache(),
-})
+  defaultOptions: {
+    watchQuery: {
+      fetchPolicy: 'network-only',
+      nextFetchPolicy: 'cache-first',
+      errorPolicy: 'all',
+    },
+    query: {
+      fetchPolicy: 'network-only',
+      errorPolicy: 'all',
+    },
+  },
+});
+
+function WelcomePage() {
+  const { openSignIn } = useAuth();
+  const [redirectToSignIn, setRedirectToSignIn] = useState(false);
+  
+  if (redirectToSignIn) {
+    return <RedirectToSignIn />;
+  }
+
+  return (
+    <Box 
+      sx={{ 
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f5f5f5',
+        padding: 3
+      }}
+    >
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 6,
+          maxWidth: 600,
+          width: '100%',
+          textAlign: 'center',
+          backgroundColor: '#ffffff',
+          borderRadius: 2
+        }}
+      >
+        <Typography variant="h3" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold', mb: 4 }}>
+          Toronto Safety Assistant
+        </Typography>
+        <Typography variant="h6" sx={{ mb: 3, color: '#666' }}>
+          Welcome to Toronto's Intelligent Safety Analysis Platform
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 4, color: '#666' }}>
+          Access real-time safety insights, crime statistics, and AI-powered analysis to make informed decisions about safety in Toronto.
+        </Typography>
+        <Button
+          variant="contained"
+          size="large"
+          startIcon={<LoginIcon />}
+          onClick={() => setRedirectToSignIn(true)}
+          sx={{
+            py: 2,
+            px: 4,
+            backgroundColor: '#1976d2',
+            '&:hover': {
+              backgroundColor: '#1565c0',
+            },
+            fontSize: '1.1rem'
+          }}
+        >
+          Sign In to Get Started
+        </Button>
+      </Paper>
+    </Box>
+  );
+}
 
 function App() {
   const [activeFilters, setActiveFilters] = useState({
@@ -21,87 +132,70 @@ function App() {
     homicides: false,
     breakAndEnterIncidents: false,
     pedestrianKSI: false,
-  })
+  });
 
   const [dateRange, setDateRange] = useState({
     startDate: "",
     endDate: "",
-  })
+  });
 
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const toggleFilter = (filterName) => {
     setActiveFilters((prev) => ({
       ...prev,
       [filterName]: !prev[filterName],
-    }))
-  }
+    }));
+  };
 
   const applyFilters = () => {
-    setIsLoading(true)
-    // MapContainer will react to updated props
-  }
+    setIsLoading(true);
+  };
 
   return (
     <ApolloProvider client={client}>
       <Router>
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh", position: "relative" }}>
-          <Navbar />
-
-          {/* If user is signed in */}
+        <div className="App">
           <SignedIn>
-            <div style={{ display: "flex", flex: 1 }}>
-              <FilterSidebar
-                activeFilters={activeFilters}
-                toggleFilter={toggleFilter}
-                dateRange={dateRange}
-                setDateRange={setDateRange}
-                applyFilters={applyFilters}
-              />
-
-              <div style={{ flex: 1, padding: "1rem" }}>
-                {/* 🔍 Division filter now shows inside SignedIn */}
-                <DivisionFilter />
-
-                <MapContainer
-                  activeFilters={activeFilters}
-                  dateRange={dateRange}
-                  setIsLoading={setIsLoading}
-                />
-              </div>
-            </div>
-
-            {isLoading && <LoadingIndicator />}
+            <Navbar />
+            <Routes>
+              <Route path="/" element={
+                <div className="app-content">
+                  <FilterSidebar
+                    activeFilters={activeFilters}
+                    toggleFilter={toggleFilter}
+                    dateRange={dateRange}
+                    setDateRange={setDateRange}
+                    applyFilters={applyFilters}
+                  />
+                  <div className="main-content">
+                    <DivisionFilter />
+                    <div className="map-section">
+                      <MapContainer
+                        activeFilters={activeFilters}
+                        dateRange={dateRange}
+                        setIsLoading={setIsLoading}
+                      />
+                    </div>
+                    <div className="intelligent-analysis">
+                      <IntelligentAnalysis />
+                    </div>
+                  </div>
+                </div>
+              } />
+              <Route path="/weather" element={<WeatherSafety />} />
+            </Routes>
           </SignedIn>
-
-          {/* If user is not signed in */}
           <SignedOut>
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-              <div style={{ textAlign: "center", padding: "20px" }}>
-                <h1>Welcome to the Incident Map</h1>
-                <p>To view and filter incidents on the map, please sign in first.</p>
-                <SignInButton mode="modal">
-                  <button
-                    style={{
-                      padding: "15px 30px",
-                      backgroundColor: "#4285F4",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "16px",
-                    }}
-                  >
-                    Sign In
-                  </button>
-                </SignInButton>
-              </div>
-            </div>
+            <Routes>
+              <Route path="*" element={<WelcomePage />} />
+            </Routes>
           </SignedOut>
+          {isLoading && <LoadingIndicator />}
         </div>
       </Router>
     </ApolloProvider>
-  )
+  );
 }
 
-export default App
+export default App;

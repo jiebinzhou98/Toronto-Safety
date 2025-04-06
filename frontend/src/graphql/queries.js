@@ -2,8 +2,8 @@ import { gql } from "@apollo/client";
 
 // Get all fatal accidents with optional date filtering
 export const GET_FATAL_ACCIDENTS = gql`
-  query GetFatalAccidents($startDate: String, $endDate: String) {
-    fatalAccidents(startDate: $startDate, endDate: $endDate) {
+  query GetFatalAccidents($startDate: String, $endDate: String, $limit: Int, $offset: Int) {
+    fatalAccidents(startDate: $startDate, endDate: $endDate, limit: $limit, offset: $offset) {
       _id
       OBJECTID
       LATITUDE

@@ -46,11 +46,19 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
   // Prepare date variables for GraphQL queries
   const dateVariables = {
-    startDate: dateRange?.startDate || null,
-    endDate: dateRange?.endDate || null,
+    startDate: dateRange?.startDate || undefined,
+    endDate: dateRange?.endDate || undefined,
   }
 
-  console.log("Date variables for queries:", dateVariables)
+  // Only include date variables if they are actually set
+  const queryVariables = {
+    ...(dateRange?.startDate && { startDate: dateRange.startDate }),
+    ...(dateRange?.endDate && { endDate: dateRange.endDate }),
+    limit: 500,   // Reduce the limit to 500 records per request
+    offset: 0     // Start from the beginning
+  };
+
+  console.log("Query variables:", queryVariables);
 
   // Query fatal accidents data with date range
   const {
@@ -59,7 +67,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     data: fatalAccidentsData,
     refetch: refetchFatalAccidents,
   } = useQuery(GET_FATAL_ACCIDENTS, {
-    variables: dateVariables,
+    variables: queryVariables,
     skip: !activeFilters.fatalAccidents,
     onCompleted: (data) => {
       console.log("Fatal accidents query completed:", data?.fatalAccidents?.length || 0, "results")
@@ -73,6 +81,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
       setIsLoading(false)
     },
     fetchPolicy: "network-only", // Important: Don't use cache for date filtering
+    errorPolicy: "all",         // Continue and return partial results on error
   })
 
   // Query shooting incidents data with date range
@@ -82,7 +91,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     data: shootingIncidentsData,
     refetch: refetchShootingIncidents,
   } = useQuery(GET_SHOOTING_INCIDENTS, {
-    variables: dateVariables,
+    variables: queryVariables,
     skip: !activeFilters.shootingIncidents,
     onCompleted: (data) => {
       console.log("Shooting incidents query completed:", data?.shootingIncidents?.length || 0, "results")
@@ -105,7 +114,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     data: homicidesData,
     refetch: refetchHomicides,
   } = useQuery(GET_HOMICIDES, {
-    variables: dateVariables,
+    variables: queryVariables,
     skip: !activeFilters.homicides,
     onCompleted: (data) => {
       console.log("Homicides query completed:", data?.homicides?.length || 0, "results")
@@ -128,7 +137,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     data: breakAndEnterData,
     refetch: refetchBreakAndEnter,
   } = useQuery(GET_BREAK_AND_ENTER_INCIDENTS, {
-    variables: dateVariables,
+    variables: queryVariables,
     skip: !activeFilters.breakAndEnterIncidents,
     onCompleted: (data) => {
       console.log("Break and enter query completed:", data?.breakAndEnterIncidents?.length || 0, "results")
@@ -164,7 +173,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     data: pedestrianKSIData,
     refetch: refetchPedestrianKSI,
   } = useQuery(GET_PEDESTRIAN_KSI, {
-    variables: dateVariables,
+    variables: queryVariables,
     skip: !activeFilters.pedestrianKSI,
     onCompleted: (data) => {
       console.log("Pedestrian KSI query completed:", data?.pedestrianKSI?.length || 0, "results")
@@ -206,11 +215,11 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
   // Function to refetch all active queries with date range
   const refetchAllActiveQueries = useCallback(() => {
-    console.log("Refetching all active queries with date range:", dateVariables)
+    console.log("Refetching all active queries with date range:", queryVariables)
 
     if (activeFilters.fatalAccidents) {
       refetchFatalAccidents({
-        variables: dateVariables,
+        variables: queryVariables,
       }).catch((error) => {
         console.error("Error refetching fatal accidents:", error)
         setErrors((prev) => ({ ...prev, fatalAccidents: error.message }))
@@ -219,7 +228,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
     if (activeFilters.shootingIncidents) {
       refetchShootingIncidents({
-        variables: dateVariables,
+        variables: queryVariables,
       }).catch((error) => {
         console.error("Error refetching shooting incidents:", error)
         setErrors((prev) => ({ ...prev, shootingIncidents: error.message }))
@@ -229,7 +238,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
     if (activeFilters.homicides) {
       refetchHomicides({
-        variables: dateVariables,
+        variables: queryVariables,
       }).catch((error) => {
         console.error("Error refetching homicides:", error)
         setErrors((prev) => ({ ...prev, homicides: error.message }))
@@ -240,7 +249,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     if (activeFilters.breakAndEnterIncidents) {
       console.log("Attempting to refetch break and enter incidents...")
       refetchBreakAndEnter({
-        variables: dateVariables,
+        variables: queryVariables,
       }).catch((error) => {
         console.error("Error refetching break and enter incidents:", error)
         setErrors((prev) => ({ ...prev, breakAndEnterIncidents: `${error.message}. Try removing date filters.` }))
@@ -250,7 +259,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
     if (activeFilters.pedestrianKSI) {
       refetchPedestrianKSI({
-        variables: dateVariables,
+        variables: queryVariables,
       }).catch((error) => {
         console.error("Error refetching pedestrian KSI incidents:", error)
         setErrors((prev) => ({ ...prev, pedestrianKSI: error.message }))

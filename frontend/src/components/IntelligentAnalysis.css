@@ -1,0 +1,113 @@
+.intelligent-analysis {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.analysis-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.analysis-header h2 {
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.analysis-header p {
+    color: #666;
+}
+
+.query-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-group label {
+    font-weight: 600;
+    color: #333;
+}
+
+.input-group input,
+.input-group textarea {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.input-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.analyze-button {
+    padding: 0.75rem 1.5rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.analyze-button:hover {
+    background-color: #0056b3;
+}
+
+.analyze-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.error-message {
+    padding: 1rem;
+    background-color: #ffebee;
+    color: #c62828;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.analysis-results {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #eee;
+}
+
+.safety-report,
+.crime-analysis {
+    margin-bottom: 2rem;
+}
+
+.safety-report h3,
+.crime-analysis h3 {
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.report-content,
+.analysis-content {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 4px;
+    line-height: 1.6;
+}
+
+.timestamp {
+    color: #666;
+    font-size: 0.9rem;
+    text-align: right;
+    margin-top: 1rem;
+} 

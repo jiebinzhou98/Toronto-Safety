@@ -1,0 +1,67 @@
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+  background-color: #f5f5f5;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.map-section {
+  position: relative;
+  height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 确保地图容器有合适的高度 */
+.map-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* 智能分析部分样式 */
+.intelligent-analysis {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+/* Loading indicator styles */
+.loading-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* 响应式布局 */
+@media (min-width: 1200px) {
+  .main-content {
+    padding: 2rem;
+  }
+
+  .map-section {
+    height: 600px;
+  }
+} 

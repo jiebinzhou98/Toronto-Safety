@@ -104,26 +104,38 @@ const isDateInRange = (dateStr, startDate, endDate) => {
 const resolvers = {
   Query: {
     // Fatal Accidents
-    fatalAccidents: async (_, { startDate, endDate }) => {
+    fatalAccidents: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
       try {
-        console.log(`Raw date inputs - startDate: ${startDate}, endDate: ${endDate}`)
-
-        // Get all accidents first
-        const allAccidents = await FatalAccident.find({})
-        console.log(`Total fatal accidents in database: ${allAccidents.length}`)
-
-        // Filter by date range if provided
+        console.log(`Fetching fatal accidents with date range: ${startDate} - ${endDate}`);
+        
+        // Build query conditions
+        let query = {};
         if (startDate || endDate) {
-          const filteredAccidents = allAccidents.filter((accident) => isDateInRange(accident.DATE, startDate, endDate))
-
-          console.log(`Filtered to ${filteredAccidents.length} fatal accidents within date range`)
-          return filteredAccidents
+          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
+          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
+          
+          if (formattedStartDate || formattedEndDate) {
+            query.DATE = {};
+            if (formattedStartDate) query.DATE.$gte = formattedStartDate;
+            if (formattedEndDate) query.DATE.$lte = formattedEndDate;
+          }
         }
 
-        return allAccidents
+        console.log('MongoDB Query:', JSON.stringify(query));
+
+        // Execute query with pagination and timeout
+        const accidents = await FatalAccident.find(query)
+          .limit(limit)
+          .skip(offset)
+          .maxTimeMS(30000) // Set maximum execution time to 30 seconds
+          .lean()
+          .exec();
+
+        console.log(`Retrieved ${accidents.length} fatal accidents`);
+        return accidents;
       } catch (error) {
-        console.error("Error fetching fatal accidents:", error)
-        throw new Error(`Error fetching fatal accidents: ${error.message}`)
+        console.error("Error fetching fatal accidents:", error);
+        throw new Error(`Error fetching fatal accidents: ${error.message}`);
       }
     },
     fatalAccidentsByDistrict: async (_, { district, startDate, endDate }) => {
@@ -152,26 +164,29 @@ const resolvers = {
     },
 
     // Shooting Incidents
-    shootingIncidents: async (_, { startDate, endDate }) => {
+    shootingIncidents: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
       try {
-        // Get all incidents
-        const allIncidents = await ShootingIncident.find({})
-        console.log(`Total shooting incidents in database: ${allIncidents.length}`)
-
-        // Filter by date range if provided
+        let query = {};
         if (startDate || endDate) {
-          const filteredIncidents = allIncidents.filter((incident) =>
-            isDateInRange(incident.OCC_DATE, startDate, endDate),
-          )
-
-          console.log(`Filtered to ${filteredIncidents.length} shooting incidents within date range`)
-          return filteredIncidents
+          query.OCC_DATE = {};
+          if (startDate) {
+            query.OCC_DATE.$gte = formatDateForMongoDB(startDate);
+          }
+          if (endDate) {
+            query.OCC_DATE.$lte = formatDateForMongoDB(endDate);
+          }
         }
 
-        return allIncidents
+        const incidents = await ShootingIncident.find(query)
+          .limit(limit)
+          .skip(offset)
+          .lean()
+          .exec();
+
+        return incidents;
       } catch (error) {
-        console.error("Error fetching shooting incidents:", error)
-        throw new Error(`Error fetching shooting incidents: ${error.message}`)
+        console.error("Error fetching shooting incidents:", error);
+        throw new Error(`Error fetching shooting incidents: ${error.message}`);
       }
     },
     shootingIncidentsByDivision: async (_, { division, startDate, endDate }) => {
@@ -200,26 +215,29 @@ const resolvers = {
     },
 
     // Homicides
-    homicides: async (_, { startDate, endDate }) => {
+    homicides: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
       try {
-        // Get all homicides
-        const allHomicides = await Homicide.find({})
-        console.log(`Total homicides in database: ${allHomicides.length}`)
-
-        // Filter by date range if provided
+        let query = {};
         if (startDate || endDate) {
-          const filteredHomicides = allHomicides.filter((homicide) =>
-            isDateInRange(homicide.OCC_DATE, startDate, endDate),
-          )
-
-          console.log(`Filtered to ${filteredHomicides.length} homicides within date range`)
-          return filteredHomicides
+          query.OCC_DATE = {};
+          if (startDate) {
+            query.OCC_DATE.$gte = formatDateForMongoDB(startDate);
+          }
+          if (endDate) {
+            query.OCC_DATE.$lte = formatDateForMongoDB(endDate);
+          }
         }
 
-        return allHomicides
+        const homicides = await Homicide.find(query)
+          .limit(limit)
+          .skip(offset)
+          .lean()
+          .exec();
+
+        return homicides;
       } catch (error) {
-        console.error("Error fetching homicides:", error)
-        throw new Error(`Error fetching homicides: ${error.message}`)
+        console.error("Error fetching homicides:", error);
+        throw new Error(`Error fetching homicides: ${error.message}`);
       }
     },
     homicidesByDivision: async (_, { division, startDate, endDate }) => {
@@ -246,47 +264,29 @@ const resolvers = {
     },
 
     // Break and Enter Incidents
-    breakAndEnterIncidents: async (_, { startDate, endDate }) => {
+    breakAndEnterIncidents: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
       try {
-        console.log(`Fetching break and enter incidents with date range: ${startDate} to ${endDate}`)
-
-        // Get all incidents without any filter first
-        const allIncidents = await BreakAndEnterIncident.find({})
-        console.log(`Total break and enter incidents in database: ${allIncidents.length}`)
-
-        // Log some sample dates to help debug
-        if (allIncidents.length > 0) {
-          const sampleSize = Math.min(5, allIncidents.length)
-          console.log(`Sample OCC_DATE values from database:`)
-          for (let i = 0; i < sampleSize; i++) {
-            console.log(`  Sample ${i + 1}: ${allIncidents[i].OCC_DATE} (type: ${typeof allIncidents[i].OCC_DATE})`)
+        let query = {};
+        if (startDate || endDate) {
+          query.OCC_DATE = {};
+          if (startDate) {
+            query.OCC_DATE.$gte = formatDateForMongoDB(startDate);
+          }
+          if (endDate) {
+            query.OCC_DATE.$lte = formatDateForMongoDB(endDate);
           }
         }
 
-        // Filter by date range if provided
-        if (startDate || endDate) {
-          console.log(`Filtering by date range: ${startDate} to ${endDate}`)
+        const incidents = await BreakAndEnterIncident.find(query)
+          .limit(limit)
+          .skip(offset)
+          .lean()
+          .exec();
 
-          // Use a more defensive filtering approach
-          const filteredIncidents = allIncidents.filter((incident) => {
-            // Skip incidents with missing or invalid OCC_DATE
-            if (!incident || !incident.OCC_DATE) {
-              return false
-            }
-
-            // Try to determine if the date is in range
-            const inRange = isDateInRange(incident.OCC_DATE, startDate, endDate)
-            return inRange
-          })
-
-          console.log(`Filtered to ${filteredIncidents.length} break and enter incidents within date range`)
-          return filteredIncidents
-        }
-
-        return allIncidents
+        return incidents;
       } catch (error) {
-        console.error("Error fetching break and enter incidents:", error)
-        throw new Error(`Error fetching break and enter incidents: ${error.message}`)
+        console.error("Error fetching break and enter incidents:", error);
+        throw new Error(`Error fetching break and enter incidents: ${error.message}`);
       }
     },
     breakAndEnterIncidentsByNeighborhood: async (_, { neighborhood, startDate, endDate }) => {
@@ -322,24 +322,38 @@ const resolvers = {
     },
 
     // Pedestrian KSI
-    pedestrianKSI: async (_, { startDate, endDate }) => {
+    pedestrianKSI: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
       try {
-        // Get all incidents
-        const allIncidents = await PedestrianKSI.find({})
-        console.log(`Total pedestrian KSI incidents in database: ${allIncidents.length}`)
-
-        // Filter by date range if provided
+        console.log(`Fetching pedestrian KSI incidents with date range: ${startDate} - ${endDate}`);
+        
+        // Build query conditions
+        let query = {};
         if (startDate || endDate) {
-          const filteredIncidents = allIncidents.filter((incident) => isDateInRange(incident.DATE, startDate, endDate))
-
-          console.log(`Filtered to ${filteredIncidents.length} pedestrian KSI incidents within date range`)
-          return filteredIncidents
+          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
+          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
+          
+          if (formattedStartDate || formattedEndDate) {
+            query.DATE = {};
+            if (formattedStartDate) query.DATE.$gte = formattedStartDate;
+            if (formattedEndDate) query.DATE.$lte = formattedEndDate;
+          }
         }
 
-        return allIncidents
+        console.log('MongoDB Query:', JSON.stringify(query));
+
+        // Execute query with pagination and timeout
+        const incidents = await PedestrianKSI.find(query)
+          .limit(Math.min(limit, 500)) // Limit maximum results to 500
+          .skip(offset)
+          .maxTimeMS(30000) // Set maximum execution time to 30 seconds
+          .lean()
+          .exec();
+
+        console.log(`Retrieved ${incidents.length} pedestrian KSI incidents`);
+        return incidents;
       } catch (error) {
-        console.error("Error fetching pedestrian KSI incidents:", error)
-        throw new Error(`Error fetching pedestrian KSI incidents: ${error.message}`)
+        console.error("Error fetching pedestrian KSI incidents:", error);
+        throw new Error(`Error fetching pedestrian KSI incidents: ${error.message}`);
       }
     },
     pedestrianKSIByNeighborhood: async (_, { neighborhood, startDate, endDate }) => {

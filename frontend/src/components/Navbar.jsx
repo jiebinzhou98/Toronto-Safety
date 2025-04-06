@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SignedIn, SignedOut, UserButton, useClerk } from "@clerk/clerk-react";
+import { WbSunny as WeatherIcon } from '@mui/icons-material';
 import '../css/Navbar.css';
 
 const Navbar = () => {
@@ -22,6 +23,14 @@ const Navbar = () => {
         {/* Always show the Discussion Board link */}
         <li>
           <Link to="/discussion">Discussion Board</Link>
+        </li>
+
+        {/* Weather Safety Link */}
+        <li>
+          <Link to="/weather" className="weather-link">
+            <WeatherIcon sx={{ mr: 1 }} />
+            Weather Safety
+          </Link>
         </li>
 
         {/* Show different content based on sign-in status */}

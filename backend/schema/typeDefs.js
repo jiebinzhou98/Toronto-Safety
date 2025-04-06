@@ -1,4 +1,6 @@
-const typeDefs = `#graphql
+const { gql } = require("apollo-server-express")
+
+const typeDefs = gql`
   type FatalAccident {
     _id: ID
     OBJECTID: Int
@@ -143,27 +145,18 @@ const typeDefs = `#graphql
   }
 
   type Query {
-    # Fatal Accidents
-    fatalAccidents(startDate: String, endDate: String): [FatalAccident]
-    fatalAccidentsByDistrict(district: String!, startDate: String, endDate: String): [FatalAccident]
-    
-    # Shooting Incidents
-    shootingIncidents(startDate: String, endDate: String): [ShootingIncident]
-    shootingIncidentsByDivision(division: String!, startDate: String, endDate: String): [ShootingIncident]
-    
-    # Homicides
-    homicides(startDate: String, endDate: String): [Homicide]
-    homicidesByDivision(division: String!, startDate: String, endDate: String): [Homicide]
-    
-    # Break and Enter Incidents
-    breakAndEnterIncidents(startDate: String, endDate: String): [BreakAndEnterIncident]
-    breakAndEnterIncidentsByNeighborhood(neighborhood: String!, startDate: String, endDate: String): [BreakAndEnterIncident]
-    
-    # Pedestrian KSI
-    pedestrianKSI(startDate: String, endDate: String): [PedestrianKSI]
-    pedestrianKSIByNeighborhood(neighborhood: String!, startDate: String, endDate: String): [PedestrianKSI]
-    
-    # User
+    fatalAccidents(startDate: String, endDate: String, limit: Int, offset: Int): [FatalAccident!]!
+    fatalAccidentsByDistrict(district: String!, startDate: String, endDate: String, limit: Int, offset: Int): [FatalAccident!]!
+    shootingIncidents(startDate: String, endDate: String, limit: Int, offset: Int): [ShootingIncident!]!
+    shootingIncidentsByDivision(division: String!, startDate: String, endDate: String, limit: Int, offset: Int): [ShootingIncident!]!
+    homicides(startDate: String, endDate: String, limit: Int, offset: Int): [Homicide!]!
+    homicidesByDivision(division: String!, startDate: String, endDate: String, limit: Int, offset: Int): [Homicide!]!
+    breakAndEnterIncidents(startDate: String, endDate: String, limit: Int, offset: Int): [BreakAndEnterIncident!]!
+    breakAndEnterIncidentsByDivision(division: String!, startDate: String, endDate: String, limit: Int, offset: Int): [BreakAndEnterIncident!]!
+    breakAndEnterIncidentsByNeighborhood(neighborhood: String!, startDate: String, endDate: String, limit: Int, offset: Int): [BreakAndEnterIncident!]!
+    pedestrianKSI(startDate: String, endDate: String, limit: Int, offset: Int): [PedestrianKSI!]!
+    pedestrianKSIByDivision(division: String!, startDate: String, endDate: String, limit: Int, offset: Int): [PedestrianKSI!]!
+    pedestrianKSIByNeighborhood(neighborhood: String!, startDate: String, endDate: String, limit: Int, offset: Int): [PedestrianKSI!]!
     me: User
   }
 
