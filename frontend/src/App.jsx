@@ -6,6 +6,7 @@ import { onError } from '@apollo/client/link/error';
 import { RetryLink } from '@apollo/client/link/retry';
 import { HttpLink } from '@apollo/client/link/http';
 import Navbar from './components/Navbar';
+import DiscussionBoard from './components/DiscussionBoard';
 import MapContainer from './components/MapContainer';
 import FilterSidebar from './components/FilterSidebar';
 import LoadingIndicator from './components/LoadingIndicator';
@@ -183,6 +184,7 @@ function App() {
                   </div>
                 </div>
               } />
+              <Route path="/discussion" element={<DiscussionBoard />} />
               <Route path="/intelianalysis" element={<IntelligentAnalysis />} />
               <Route path="/weather" element={<WeatherSafety />} />
             </Routes>

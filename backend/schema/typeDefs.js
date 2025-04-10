@@ -144,6 +144,14 @@ const typeDefs = gql`
     user: User
   }
 
+  type Discussion {
+    id: ID!
+    title: String!
+    message: String!
+    author: String!
+    createdAt: String!
+  }
+
   type Query {
     fatalAccidents(startDate: String, endDate: String, limit: Int, offset: Int): [FatalAccident!]!
     fatalAccidentsByDistrict(district: String!, startDate: String, endDate: String, limit: Int, offset: Int): [FatalAccident!]!
@@ -158,12 +166,15 @@ const typeDefs = gql`
     pedestrianKSIByDivision(division: String!, startDate: String, endDate: String, limit: Int, offset: Int): [PedestrianKSI!]!
     pedestrianKSIByNeighborhood(neighborhood: String!, startDate: String, endDate: String, limit: Int, offset: Int): [PedestrianKSI!]!
     me: User
+    getDiscussions: [Discussion]
   }
 
   type Mutation {
     # User Authentication
     register(username: String!, email: String!, password: String!): AuthPayload
     login(email: String!, password: String!): AuthPayload
+    addDiscussion(title: String!, message: String!, author: String!): Discussion
+    deleteDiscussion(id: ID!): Discussion
   }
 `
 

@@ -3,6 +3,7 @@ const ShootingIncident = require("../models/ShootingIncidents")
 const Homicide = require("../models/Homicide")
 const BreakAndEnterIncident = require("../models/BreakAndEnter")
 const PedestrianKSI = require("../models/PedestrianKSI")
+const Discussion = require("../models/Discussion")
 const User = require("../models/User")
 const jwt = require("jsonwebtoken")
 const bcrypt = require("bcryptjs")
@@ -388,6 +389,15 @@ const resolvers = {
       }
       return await User.findById(user.id)
     },
+
+    getDiscussions: async () => {
+      try {
+        return await Discussion.find().sort({ createdAt: -1 });
+      } catch (error) {
+        console.error("Error fetching discussions:", error);
+        throw new Error("Error fetching discussions");
+      }
+    },
   },
 
   Mutation: {
@@ -461,6 +471,25 @@ const resolvers = {
         throw new Error(`Error logging in: ${error.message}`)
       }
     },
+
+    addDiscussion: async (_, { title, message, author }) => {
+      try {
+        const newDiscussion = new Discussion({
+          title,
+          message,
+          author,
+          createdAt: new Date().toISOString(),
+        });
+        return await newDiscussion.save();
+      } catch (error) {
+        console.error("Error creating discussion:", error);
+        throw new Error("Error creating discussion");
+      }
+    },
+    deleteDiscussion: async (_, { id }) => {
+      return await Discussion.findByIdAndDelete(id);
+    }
+
   },
 }
 
