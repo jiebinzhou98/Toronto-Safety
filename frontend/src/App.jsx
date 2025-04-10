@@ -178,11 +178,12 @@ function App() {
                       />
                     </div>
                     <div className="intelligent-analysis">
-                      <IntelligentAnalysis />
+                      
                     </div>
                   </div>
                 </div>
               } />
+              <Route path="/intelianalysis" element={<IntelligentAnalysis />} />
               <Route path="/weather" element={<WeatherSafety />} />
             </Routes>
           </SignedIn>

@@ -19,7 +19,9 @@ const Navbar = () => {
         <li>
           <Link to="/">Home</Link>
         </li>
-
+        <li>
+        <Link to="/intelianalysis" className="weather-link"> AI Assistant </Link>
+        </li>
         {/* Always show the Discussion Board link */}
         <li>
           <Link to="/discussion">Discussion Board</Link>
