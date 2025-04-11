@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api"
 import { useQuery } from "@apollo/client"
 import {
@@ -10,6 +10,7 @@ import {
   GET_BREAK_AND_ENTER_INCIDENTS,
   GET_PEDESTRIAN_KSI,
 } from "../graphql/queries"
+import axios from "axios"
 
 const containerStyle = {
   width: "100%",

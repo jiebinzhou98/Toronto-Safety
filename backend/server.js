@@ -10,6 +10,7 @@ const jwt = require("jsonwebtoken")
 const homicideRoutes = require('./routes/Homicide');
 const agentRoutes = require('./routes/agentRoutes');
 const weatherRoutes = require('./routes/weatherRoutes');
+const emergencyRoutes = require('./routes/emergencyRoutes');
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -56,6 +57,18 @@ const corsOptions = {
   credentials: true
 };
 
+// Error handling middleware
+const errorHandler = (err, req, res, next) => {
+  console.error('Global error handler:', err);
+  res.status(500).json({
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? {
+      message: err.message,
+      stack: err.stack
+    } : undefined
+  });
+};
+
 async function startServer() {
   // Create Apollo Server
   const server = new ApolloServer({
@@ -88,9 +101,11 @@ async function startServer() {
     console.log('Warning: Authentication bypass is enabled');
     app.use('/api/agent', agentRoutes);
     app.use('/api/weather', weatherRoutes);
+    app.use('/api/emergency', emergencyRoutes);
   } else {
     app.use('/api/agent', authenticateJWT, agentRoutes);
     app.use('/api/weather', authenticateJWT, weatherRoutes);
+    app.use('/api/emergency', authenticateJWT, emergencyRoutes);
   }
   
   // Apply Apollo middleware with CORS
@@ -115,6 +130,9 @@ async function startServer() {
     }
   }))
 
+  // Apply error handling middleware
+  app.use(errorHandler);
+
   // Start server
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
@@ -123,4 +141,7 @@ async function startServer() {
   })
 }
 
-startServer()
+startServer().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});

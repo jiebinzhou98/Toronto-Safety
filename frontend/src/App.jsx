@@ -13,6 +13,7 @@ import LoadingIndicator from './components/LoadingIndicator';
 import DivisionFilter from './components/DivisionFilter';
 import IntelligentAnalysis from './components/IntelligentAnalysis';
 import WeatherSafety from './components/WeatherSafety';
+import EmergencyChat from './components/EmergencyChat';
 import { Box, Button, Typography, Paper } from '@mui/material';
 import LoginIcon from '@mui/icons-material/Login';
 import './App.css';
@@ -188,6 +189,7 @@ function App() {
               <Route path="/intelianalysis" element={<IntelligentAnalysis />} />
               <Route path="/weather" element={<WeatherSafety />} />
             </Routes>
+            <EmergencyChat />
           </SignedIn>
           <SignedOut>
             <Routes>
