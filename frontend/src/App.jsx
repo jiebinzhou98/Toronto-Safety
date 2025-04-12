@@ -10,7 +10,6 @@ import DiscussionBoard from './components/DiscussionBoard';
 import MapContainer from './components/MapContainer';
 import FilterSidebar from './components/FilterSidebar';
 import LoadingIndicator from './components/LoadingIndicator';
-import DivisionFilter from './components/DivisionFilter';
 import IntelligentAnalysis from './components/IntelligentAnalysis';
 import WeatherSafety from './components/WeatherSafety';
 import EmergencyChat from './components/EmergencyChat';
@@ -141,6 +140,8 @@ function App() {
     endDate: "",
   });
 
+  const [selectedDivision, setSelectedDivision] = useState(""); // State for selected division
+
   const [isLoading, setIsLoading] = useState(false);
 
   const toggleFilter = (filterName) => {
@@ -151,6 +152,7 @@ function App() {
   };
 
   const applyFilters = () => {
+    console.log("Filters applied:", { activeFilters, dateRange, selectedDivision });
     setIsLoading(true);
   };
 
@@ -169,18 +171,20 @@ function App() {
                     dateRange={dateRange}
                     setDateRange={setDateRange}
                     applyFilters={applyFilters}
+                    selectedDivision={selectedDivision} // Pass selectedDivision to FilterSidebar
+                    setSelectedDivision={setSelectedDivision} // Pass setSelectedDivision to FilterSidebar
                   />
                   <div className="main-content">
-                    <DivisionFilter />
                     <div className="map-section">
                       <MapContainer
                         activeFilters={activeFilters}
                         dateRange={dateRange}
                         setIsLoading={setIsLoading}
+                        selectedDivision={selectedDivision} // Pass selectedDivision to MapContainer
                       />
                     </div>
                     <div className="intelligent-analysis">
-                      
+                      {/* Other components */}
                     </div>
                   </div>
                 </div>

@@ -8,12 +8,16 @@ function FilterSidebar({
   dateRange = { startDate: "", endDate: "" },
   setDateRange = () => {},
   applyFilters = () => {},
+  selectedDivision = "",
+  setSelectedDivision = () => {},
 }) {
   const [startDate, setStartDate] = useState(dateRange.startDate || "")
   const [endDate, setEndDate] = useState(dateRange.endDate || "")
   const [isDateFilterActive, setIsDateFilterActive] = useState(!!dateRange.startDate || !!dateRange.endDate)
   const [dateError, setDateError] = useState("")
   const [isApplying, setIsApplying] = useState(false)
+
+  const divisions = ["11", "14", "22", "31", "32", "41", "51"] // Customize this list
 
   // Update local state when dateRange prop changes
   useEffect(() => {
@@ -53,7 +57,7 @@ function FilterSidebar({
     // Call the applyFilters function from props
     applyFilters()
 
-    console.log("Applied date filters:", { startDate, endDate })
+    console.log("Applied filters:", { startDate, endDate, selectedDivision })
 
     // Reset applying state after a short delay
     setTimeout(() => {
@@ -197,6 +201,28 @@ function FilterSidebar({
               ></span>
             </span>
           </label>
+        </div>
+
+        {/* Division Filter */}
+        <div>
+          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Police Division:</label>
+          <select
+            value={selectedDivision}
+            onChange={(e) => setSelectedDivision(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "5px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+            }}
+          >
+            <option value="">Select Division</option>
+            {divisions.map((div) => (
+              <option key={div} value={div}>
+                Division {div}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

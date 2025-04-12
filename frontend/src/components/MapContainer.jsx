@@ -22,7 +22,7 @@ const center = {
   lng: -79.4163,
 }
 
-function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate: "" }, setIsLoading = () => {} }) {
+function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate: "" }, setIsLoading = () => {}, selectedDivision = "" }) {
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
@@ -44,6 +44,28 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     pedestrianKSI: 0,
   })
   const [errors, setErrors] = useState({})
+  const [divisionMarkers, setDivisionMarkers] = useState([]) // State for division markers
+
+  // Example division coordinates (replace with actual data)
+  const divisionCoordinates = {
+    "11": { lat: 43.649, lng: -79.452 },
+    "14": { lat: 43.655, lng: -79.419 },
+    "22": { lat: 43.667, lng: -79.487 },
+    "31": { lat: 43.715, lng: -79.491 },
+    "32": { lat: 43.733, lng: -79.404 },
+    "41": { lat: 43.725, lng: -79.265 },
+    "51": { lat: 43.658, lng: -79.365 },
+  }
+
+  useEffect(() => {
+    if (selectedDivision && divisionCoordinates[selectedDivision]) {
+      const divisionCenter = divisionCoordinates[selectedDivision]
+      setMapCenter(divisionCenter) // Center the map on the selected division
+      setDivisionMarkers([divisionCenter]) // Highlight the selected division
+    } else {
+      setDivisionMarkers([]) // Clear markers if no division is selected
+    }
+  }, [selectedDivision])
 
   // Prepare date variables for GraphQL queries
   const dateVariables = {
@@ -467,7 +489,19 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
         </div>
       )}
 
-      <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={10} onLoad={onLoad} onUnmount={onUnmount}>
+      <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={12} onLoad={onLoad} onUnmount={onUnmount}>
+        {/* Division Marker */}
+        {divisionMarkers.map((marker, index) => (
+          <Marker
+            key={index}
+            position={marker}
+            icon={{
+              url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+              scaledSize: new window.google.maps.Size(30, 30),
+            }}
+          />
+        ))}
+
         {/* Display Fatal Accident Markers */}
         {activeFilters.fatalAccidents &&
           fatalAccidentsData?.fatalAccidents?.map((accident) =>
