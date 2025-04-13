@@ -141,6 +141,7 @@ function App() {
   });
 
   const [selectedDivision, setSelectedDivision] = useState(""); // State for selected division
+  const [selectedLocations, setSelectedLocations] = useState([]); // State for multiple selected locations
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -152,8 +153,13 @@ function App() {
   };
 
   const applyFilters = () => {
-    console.log("Filters applied:", { activeFilters, dateRange, selectedDivision });
+    console.log("Filters applied:", { activeFilters, dateRange, selectedDivision, selectedLocations });
     setIsLoading(true);
+  };
+
+  // Handle multiple location selections
+  const updateSelectedLocations = (locations) => {
+    setSelectedLocations(locations);
   };
 
   return (
@@ -171,8 +177,10 @@ function App() {
                     dateRange={dateRange}
                     setDateRange={setDateRange}
                     applyFilters={applyFilters}
-                    selectedDivision={selectedDivision} // Pass selectedDivision to FilterSidebar
-                    setSelectedDivision={setSelectedDivision} // Pass setSelectedDivision to FilterSidebar
+                    selectedDivision={selectedDivision}
+                    setSelectedDivision={setSelectedDivision}
+                    selectedLocations={selectedLocations}
+                    updateSelectedLocations={updateSelectedLocations}
                   />
                   <div className="main-content">
                     <div className="map-section">
@@ -180,7 +188,8 @@ function App() {
                         activeFilters={activeFilters}
                         dateRange={dateRange}
                         setIsLoading={setIsLoading}
-                        selectedDivision={selectedDivision} // Pass selectedDivision to MapContainer
+                        selectedDivision={selectedDivision}
+                        selectedLocations={selectedLocations}
                       />
                     </div>
                     <div className="intelligent-analysis">

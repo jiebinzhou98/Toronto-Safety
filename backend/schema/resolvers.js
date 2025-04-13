@@ -35,49 +35,97 @@ const parseMongoDB_DateString = (dateStr) => {
   if (!dateStr) return null
 
   try {
+    // If it's already a Date object, return it
+    if (dateStr instanceof Date) {
+      return dateStr;
+    }
+    
+    // Convert to string if it's not already
+    const dateString = String(dateStr).trim();
+    
+    // Log the date we're trying to parse
+    console.log(`Parsing date: "${dateString}"`);
+    
     // Handle different date formats that might be in the database
     // Extract just the date part (before any time or AM/PM)
-    const datePart = dateStr.split(" ")[0]
+    const datePart = dateString.split(" ")[0].trim();
+    
+    // Try multiple date formats
+    
+    // Check if it's a numeric timestamp (milliseconds since epoch)
+    if (!isNaN(dateString) && dateString.length > 8) {
+      const timestamp = parseInt(dateString);
+      const date = new Date(timestamp);
+      if (!isNaN(date.getTime())) {
+        console.log(`Parsed as timestamp: ${date.toISOString()}`);
+        return date;
+      }
+    }
 
     // Check if the date is in MM/DD/YYYY format
     if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(datePart)) {
-      const [month, day, year] = datePart.split("/").map((num) => Number.parseInt(num, 10))
+      const [month, day, year] = datePart.split("/").map((num) => Number.parseInt(num, 10));
       // Create a new Date object (months are 0-indexed in JavaScript)
-      return new Date(year, month - 1, day)
+      const date = new Date(year, month - 1, day);
+      console.log(`Parsed as MM/DD/YYYY: ${date.toISOString()}`);
+      return date;
     }
+    
     // Check if the date is in YYYY-MM-DD format
     else if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(datePart)) {
-      const [year, month, day] = datePart.split("-").map((num) => Number.parseInt(num, 10))
-      return new Date(year, month - 1, day)
+      const [year, month, day] = datePart.split("-").map((num) => Number.parseInt(num, 10));
+      const date = new Date(year, month - 1, day);
+      console.log(`Parsed as YYYY-MM-DD: ${date.toISOString()}`);
+      return date;
+    }
+    
+    // Check if the date is in YYYY/MM/DD format
+    else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(datePart)) {
+      const [year, month, day] = datePart.split("/").map((num) => Number.parseInt(num, 10));
+      const date = new Date(year, month - 1, day);
+      console.log(`Parsed as YYYY/MM/DD: ${date.toISOString()}`);
+      return date;
+    }
+    
+    // Check if the date is in DD-MM-YYYY format
+    else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(datePart)) {
+      const [day, month, year] = datePart.split("-").map((num) => Number.parseInt(num, 10));
+      const date = new Date(year, month - 1, day);
+      console.log(`Parsed as DD-MM-YYYY: ${date.toISOString()}`);
+      return date;
+    }
+    
+    // Check if it's a date in format "Month DD, YYYY"
+    else if (/[a-zA-Z]+\s+\d{1,2},\s+\d{4}/.test(dateString)) {
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        console.log(`Parsed as Month DD, YYYY: ${date.toISOString()}`);
+        return date;
+      }
     }
 
     // If we can't parse it with our custom logic, try the native Date parser
-    const fallbackDate = new Date(dateStr)
+    const fallbackDate = new Date(dateString);
     if (!isNaN(fallbackDate.getTime())) {
-      return fallbackDate
+      console.log(`Parsed with native Date parser: ${fallbackDate.toISOString()}`);
+      return fallbackDate;
     }
 
-    console.error(`Unparseable date format: ${dateStr}`)
-    return null
+    console.log(`Failed to parse date: "${dateString}"`);
+    return null;
   } catch (e) {
-    console.error(`Error parsing MongoDB date string: ${dateStr}`, e)
-    return null
+    console.error(`Error parsing date string: "${dateStr}"`, e);
+    return null;
   }
 }
 
 // Helper function to check if a date is within a range
 const isDateInRange = (dateStr, startDate, endDate) => {
-  if (!dateStr) {
-    console.log(`Skipping null date string in isDateInRange`)
-    return false
-  }
+  if (!dateStr) return false
 
   try {
     const date = parseMongoDB_DateString(dateStr)
-    if (!date) {
-      console.log(`Could not parse date: ${dateStr}`)
-      return false
-    }
+    if (!date) return false
 
     let isInRange = true
 
@@ -97,425 +145,224 @@ const isDateInRange = (dateStr, startDate, endDate) => {
 
     return isInRange
   } catch (e) {
-    console.error(`Error checking date range for: ${dateStr}`, e)
     return false
   }
 }
 
+// Helper function to find the appropriate date field for a given model
+const getDateFieldForModel = (Model) => {
+  const modelName = Model.modelName;
+  
+  // Map model names to their date fields
+  const dateFieldMap = {
+    'FatalAccident': 'DATE',
+    'ShootingIncident': 'OCC_DATE',
+    'Homicide': 'OCC_DATE',
+    'BreakAndEnterIncident': 'OCC_DATE',
+    'PedestrianKSI': 'DATE'
+  };
+  
+  // Return the mapped field or a default
+  const dateField = dateFieldMap[modelName];
+  console.log(`Using date field "${dateField}" for model "${modelName}"`);
+  return dateField || 'DATE'; // Default to DATE if not found
+};
+
+// Universal date filter function that can be applied to any incident collection
+const applyDateFilter = async (Model, query = {}, startDate, endDate, limit = 2000, offset = 0) => {
+  try {
+    // Determine the date field for this model
+    const dateField = getDateFieldForModel(Model);
+    
+    console.log(`Applying date filter to ${Model.modelName} using field "${dateField}"`);
+    console.log(`Query criteria: ${JSON.stringify(query)}`);
+    console.log(`Date range: ${startDate || 'any'} to ${endDate || 'any'}`);
+    
+    // First fetch all incidents matching the base query without limiting the results
+    const incidents = await Model.find(query)
+      .limit(Math.min(limit * 3, 6000)) // Increased to 6000 to handle larger result sets
+      .skip(offset)
+      .maxTimeMS(60000) // Increased timeout to 60 seconds
+      .lean()
+      .exec();
+    
+    console.log(`Retrieved ${incidents.length} records from ${Model.modelName}`);
+    
+    // Sample the date fields from the first few records to understand format
+    if (incidents.length > 0) {
+      const sampleDates = incidents.slice(0, 3).map(inc => inc[dateField]);
+      console.log(`Sample date values from ${Model.modelName}: ${JSON.stringify(sampleDates)}`);
+    }
+    
+    // If no date filtering needed, return the results with pagination
+    if (!startDate && !endDate) {
+      console.log(`No date filtering applied, returning ${Math.min(incidents.length, limit)} records`);
+      return incidents.slice(0, limit);
+    }
+    
+    // Create Date objects from startDate and endDate for comparison
+    const startDateObj = startDate ? new Date(startDate) : null;
+    const endDateObj = endDate ? new Date(endDate) : null;
+    
+    if (startDateObj) startDateObj.setHours(0, 0, 0, 0);
+    if (endDateObj) endDateObj.setHours(23, 59, 59, 999);
+    
+    console.log(`Start date for comparison: ${startDateObj ? startDateObj.toISOString() : 'none'}`);
+    console.log(`End date for comparison: ${endDateObj ? endDateObj.toISOString() : 'none'}`);
+    
+    // Filter the results by date
+    const filteredResults = incidents.filter(incident => {
+      const dateValue = incident[dateField];
+      
+      // Skip records with no date
+      if (!dateValue) {
+        return false;
+      }
+      
+      // Try parsing the date
+      try {
+        const parsedDate = parseMongoDB_DateString(dateValue);
+        
+        // Skip if date can't be parsed
+        if (!parsedDate) {
+          return false;
+        }
+        
+        // Check against start date
+        if (startDateObj && parsedDate < startDateObj) {
+          return false;
+        }
+        
+        // Check against end date
+        if (endDateObj && parsedDate > endDateObj) {
+          return false;
+        }
+        
+        return true;
+      } catch (err) {
+        console.error(`Error parsing date ${dateValue}:`, err);
+        return false;
+      }
+    });
+    
+    console.log(`After date filtering, found ${filteredResults.length} records in range`);
+    
+    // Apply pagination to filtered results - return all results up to the limit
+    const paginatedResults = filteredResults.slice(0, limit);
+    console.log(`Returning ${paginatedResults.length} records after pagination`);
+    
+    return paginatedResults;
+  } catch (error) {
+    console.error(`Error applying date filter to ${Model.modelName}:`, error);
+    throw error;
+  }
+};
+
 const resolvers = {
   Query: {
     // Fatal Accidents
-    fatalAccidents: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
+    fatalAccidents: async (_, { startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        console.log(`Fetching fatal accidents with date range: ${startDate} - ${endDate}`);
-        
-        // Build query conditions
-        let query = {};
-        if (startDate || endDate) {
-          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
-          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
-          
-          if (formattedStartDate || formattedEndDate) {
-            query.DATE = {};
-            if (formattedStartDate) query.DATE.$gte = formattedStartDate;
-            if (formattedEndDate) query.DATE.$lte = formattedEndDate;
-          }
-        }
-
-        console.log('MongoDB Query:', JSON.stringify(query));
-
-        // Execute query with pagination and timeout
-        const accidents = await FatalAccident.find(query)
-          .limit(limit)
-          .skip(offset)
-          .maxTimeMS(30000) // Set maximum execution time to 30 seconds
-          .lean()
-          .exec();
-
-        console.log(`Retrieved ${accidents.length} fatal accidents`);
-        return accidents;
+        return await applyDateFilter(FatalAccident, {}, startDate, endDate, limit, offset);
       } catch (error) {
         console.error("Error fetching fatal accidents:", error);
         throw new Error(`Error fetching fatal accidents: ${error.message}`);
       }
     },
-    fatalAccidentsByDistrict: async (_, { district, startDate, endDate }) => {
+    fatalAccidentsByDistrict: async (_, { district, startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        // Get accidents by district
-        const accidentsByDistrict = await FatalAccident.find({ DISTRICT: district })
-        console.log(`Total fatal accidents in district ${district}: ${accidentsByDistrict.length}`)
-
-        // Filter by date range if provided
-        if (startDate || endDate) {
-          const filteredAccidents = accidentsByDistrict.filter((accident) =>
-            isDateInRange(accident.DATE, startDate, endDate),
-          )
-
-          console.log(
-            `Filtered to ${filteredAccidents.length} fatal accidents in district ${district} within date range`,
-          )
-          return filteredAccidents
-        }
-
-        return accidentsByDistrict
+        return await applyDateFilter(FatalAccident, { DISTRICT: district }, startDate, endDate, limit, offset);
       } catch (error) {
-        console.error(`Error fetching fatal accidents by district ${district}:`, error)
-        throw new Error(`Error fetching fatal accidents by district: ${error.message}`)
+        console.error(`Error fetching fatal accidents by district ${district}:`, error);
+        throw new Error(`Error fetching fatal accidents by district: ${error.message}`);
       }
     },
 
     // Shooting Incidents
-    shootingIncidents: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
+    shootingIncidents: async (_, { startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        let query = {};
-        if (startDate || endDate) {
-          query.OCC_DATE = {};
-          if (startDate) {
-            query.OCC_DATE.$gte = formatDateForMongoDB(startDate);
-          }
-          if (endDate) {
-            query.OCC_DATE.$lte = formatDateForMongoDB(endDate);
-          }
-        }
-
-        const incidents = await ShootingIncident.find(query)
-          .limit(limit)
-          .skip(offset)
-          .lean()
-          .exec();
-
-        return incidents;
+        return await applyDateFilter(ShootingIncident, {}, startDate, endDate, limit, offset);
       } catch (error) {
         console.error("Error fetching shooting incidents:", error);
         throw new Error(`Error fetching shooting incidents: ${error.message}`);
       }
     },
-    shootingIncidentsByDivision: async (_, { division, startDate, endDate }) => {
+    shootingIncidentsByDivision: async (_, { division, startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        // Get incidents by division
-        const incidentsByDivision = await ShootingIncident.find({ DIVISION: division })
-        console.log(`Total shooting incidents in division ${division}: ${incidentsByDivision.length}`)
-
-        // Filter by date range if provided
-        if (startDate || endDate) {
-          const filteredIncidents = incidentsByDivision.filter((incident) =>
-            isDateInRange(incident.OCC_DATE, startDate, endDate),
-          )
-
-          console.log(
-            `Filtered to ${filteredIncidents.length} shooting incidents in division ${division} within date range`,
-          )
-          return filteredIncidents
-        }
-
-        return incidentsByDivision
+        return await applyDateFilter(ShootingIncident, { DIVISION: division }, startDate, endDate, limit, offset);
       } catch (error) {
-        console.error(`Error fetching shooting incidents by division ${division}:`, error)
-        throw new Error(`Error fetching shooting incidents by division: ${error.message}`)
+        console.error(`Error fetching shooting incidents by division ${division}:`, error);
+        throw new Error(`Error fetching shooting incidents by division: ${error.message}`);
       }
     },
 
     // Homicides
-    homicides: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
+    homicides: async (_, { startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        let query = {};
-        if (startDate || endDate) {
-          query.OCC_DATE = {};
-          if (startDate) {
-            query.OCC_DATE.$gte = formatDateForMongoDB(startDate);
-          }
-          if (endDate) {
-            query.OCC_DATE.$lte = formatDateForMongoDB(endDate);
-          }
-        }
-
-        const homicides = await Homicide.find(query)
-          .limit(limit)
-          .skip(offset)
-          .lean()
-          .exec();
-
-        return homicides;
+        return await applyDateFilter(Homicide, {}, startDate, endDate, limit, offset);
       } catch (error) {
         console.error("Error fetching homicides:", error);
         throw new Error(`Error fetching homicides: ${error.message}`);
       }
     },
-    homicidesByDivision: async (_, { division, startDate, endDate }) => {
+    homicidesByDivision: async (_, { division, startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        // Get homicides by division
-        const homicidesByDivision = await Homicide.find({ DIVISION: division })
-        console.log(`Total homicides in division ${division}: ${homicidesByDivision.length}`)
-
-        // Filter by date range if provided
-        if (startDate || endDate) {
-          const filteredHomicides = homicidesByDivision.filter((homicide) =>
-            isDateInRange(homicide.OCC_DATE, startDate, endDate),
-          )
-
-          console.log(`Filtered to ${filteredHomicides.length} homicides in division ${division} within date range`)
-          return filteredHomicides
-        }
-
-        return homicidesByDivision
+        return await applyDateFilter(Homicide, { DIVISION: division }, startDate, endDate, limit, offset);
       } catch (error) {
-        console.error(`Error fetching homicides by division ${division}:`, error)
-        throw new Error(`Error fetching homicides by division: ${error.message}`)
+        console.error(`Error fetching homicides by division ${division}:`, error);
+        throw new Error(`Error fetching homicides by division: ${error.message}`);
       }
     },
 
     // Break and Enter Incidents
-    breakAndEnterIncidents: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
+    breakAndEnterIncidents: async (_, { startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        console.log(`Fetching break and enter incidents with date range: ${startDate} - ${endDate}`);
-        
-        let query = {};
-        if (startDate || endDate) {
-          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
-          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
-          
-          if (formattedStartDate || formattedEndDate) {
-            query.OCC_DATE = {};
-            if (formattedStartDate) query.OCC_DATE.$gte = formattedStartDate;
-            if (formattedEndDate) query.OCC_DATE.$lte = formattedEndDate;
-          }
-        }
-
-        console.log('MongoDB Query for break and enter incidents:', JSON.stringify(query));
-
-        // Execute query with pagination and timeout
-        const incidents = await BreakAndEnterIncident.find(query)
-          .limit(Math.min(limit, 500)) // Limit maximum results to 500
-          .skip(offset)
-          .maxTimeMS(30000) // Set maximum execution time to 30 seconds
-          .lean()
-          .exec();
-
-        console.log(`Retrieved ${incidents.length} break and enter incidents`);
-        return incidents;
+        return await applyDateFilter(BreakAndEnterIncident, {}, startDate, endDate, limit, offset);
       } catch (error) {
         console.error("Error fetching break and enter incidents:", error);
         throw new Error(`Error fetching break and enter incidents: ${error.message}`);
       }
     },
-    breakAndEnterIncidentsByDivision: async (_, { division, startDate, endDate, limit = 1000, offset = 0 }) => {
+    breakAndEnterIncidentsByDivision: async (_, { division, startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        console.log(`Fetching break and enter incidents for division ${division} with date range: ${startDate} - ${endDate}`);
-        
-        // Get incidents by division
-        const query = { DIVISION: division };
-        
-        if (startDate || endDate) {
-          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
-          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
-          
-          if (formattedStartDate || formattedEndDate) {
-            query.OCC_DATE = {};
-            if (formattedStartDate) query.OCC_DATE.$gte = formattedStartDate;
-            if (formattedEndDate) query.OCC_DATE.$lte = formattedEndDate;
-          }
-        }
-        
-        console.log('MongoDB Query for break and enter by division:', JSON.stringify(query));
-        
-        const incidents = await BreakAndEnterIncident.find(query)
-          .limit(Math.min(limit, 500))
-          .skip(offset)
-          .maxTimeMS(30000)
-          .lean()
-          .exec();
-          
-        console.log(`Retrieved ${incidents.length} break and enter incidents in division ${division}`);
-        
-        // Double-check date filtering
-        if (startDate || endDate) {
-          const filteredIncidents = incidents.filter(incident => {
-            if (!incident.OCC_DATE || typeof incident.OCC_DATE !== "string") {
-              return false;
-            }
-            return isDateInRange(incident.OCC_DATE, startDate, endDate);
-          });
-          
-          console.log(`After additional date filtering, returning ${filteredIncidents.length} break and enter incidents in division ${division}`);
-          return filteredIncidents;
-        }
-        
-        return incidents;
+        return await applyDateFilter(BreakAndEnterIncident, { DIVISION: division }, startDate, endDate, limit, offset);
       } catch (error) {
         console.error(`Error fetching break and enter incidents by division ${division}:`, error);
         throw new Error(`Error fetching break and enter incidents by division: ${error.message}`);
       }
     },
-    breakAndEnterIncidentsByNeighborhood: async (_, { neighborhood, startDate, endDate }) => {
+    breakAndEnterIncidentsByNeighborhood: async (_, { neighborhood, startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        console.log(`Fetching break and enter incidents for neighborhood ${neighborhood} with date range: ${startDate} - ${endDate}`);
-        
-        // Get incidents by neighborhood
-        const incidentsByNeighborhood = await BreakAndEnterIncident.find({ NEIGHBOURHOOD_158: neighborhood })
-        console.log(
-          `Total break and enter incidents in neighborhood ${neighborhood}: ${incidentsByNeighborhood.length}`,
-        )
-
-        // Filter by date range if provided
-        if (startDate || endDate) {
-          const filteredIncidents = incidentsByNeighborhood.filter((incident) => {
-            // Check if OCC_DATE exists and is a string
-            if (!incident.OCC_DATE || typeof incident.OCC_DATE !== "string") {
-              return false
-            }
-
-            try {
-              return isDateInRange(incident.OCC_DATE, startDate, endDate)
-            } catch (error) {
-              console.error(`Error in date filtering for incident ${incident._id}:`, error)
-              return false
-            }
-          })
-
-          console.log(
-            `Filtered to ${filteredIncidents.length} break and enter incidents in neighborhood ${neighborhood} within date range`,
-          )
-          return filteredIncidents
-        }
-
-        return incidentsByNeighborhood
+        return await applyDateFilter(BreakAndEnterIncident, { NEIGHBOURHOOD_158: neighborhood }, startDate, endDate, limit, offset);
       } catch (error) {
-        console.error(`Error fetching break and enter incidents by neighborhood ${neighborhood}:`, error)
-        throw new Error(`Error fetching break and enter incidents by neighborhood: ${error.message}`)
+        console.error(`Error fetching break and enter incidents by neighborhood ${neighborhood}:`, error);
+        throw new Error(`Error fetching break and enter incidents by neighborhood: ${error.message}`);
       }
     },
 
     // Pedestrian KSI
-    pedestrianKSI: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
+    pedestrianKSI: async (_, { startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        console.log(`Fetching pedestrian KSI incidents with date range: ${startDate} - ${endDate}`);
-        
-        // Build query conditions
-        let query = {};
-        if (startDate || endDate) {
-          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
-          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
-          
-          if (formattedStartDate || formattedEndDate) {
-            query.DATE = {};
-            if (formattedStartDate) query.DATE.$gte = formattedStartDate;
-            if (formattedEndDate) query.DATE.$lte = formattedEndDate;
-          }
-        }
-
-        console.log('MongoDB Query for pedestrian KSI:', JSON.stringify(query));
-
-        // Execute query with pagination and timeout
-        const incidents = await PedestrianKSI.find(query)
-          .limit(Math.min(limit, 500)) // Limit maximum results to 500
-          .skip(offset)
-          .maxTimeMS(30000) // Set maximum execution time to 30 seconds
-          .lean()
-          .exec();
-
-        console.log(`Retrieved ${incidents.length} pedestrian KSI incidents`);
-        
-        // Double-check date filtering on the results
-        if (startDate || endDate) {
-          const filteredIncidents = incidents.filter(incident => {
-            if (!incident.DATE || typeof incident.DATE !== "string") {
-              return false;
-            }
-            return isDateInRange(incident.DATE, startDate, endDate);
-          });
-          
-          console.log(`After additional date filtering, returning ${filteredIncidents.length} pedestrian KSI incidents`);
-          return filteredIncidents;
-        }
-        
-        return incidents;
+        return await applyDateFilter(PedestrianKSI, {}, startDate, endDate, limit, offset);
       } catch (error) {
         console.error("Error fetching pedestrian KSI incidents:", error);
         throw new Error(`Error fetching pedestrian KSI incidents: ${error.message}`);
       }
     },
-    pedestrianKSIByDivision: async (_, { division, startDate, endDate, limit = 1000, offset = 0 }) => {
+    pedestrianKSIByDivision: async (_, { division, startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        console.log(`Fetching pedestrian KSI incidents for division ${division} with date range: ${startDate} - ${endDate}`);
-        
-        // Get incidents by division
-        const query = { DIVISION: division };
-        
-        if (startDate || endDate) {
-          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
-          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
-          
-          if (formattedStartDate || formattedEndDate) {
-            query.DATE = {};
-            if (formattedStartDate) query.DATE.$gte = formattedStartDate;
-            if (formattedEndDate) query.DATE.$lte = formattedEndDate;
-          }
-        }
-        
-        console.log('MongoDB Query for pedestrian KSI by division:', JSON.stringify(query));
-        
-        const incidents = await PedestrianKSI.find(query)
-          .limit(Math.min(limit, 500))
-          .skip(offset)
-          .maxTimeMS(30000)
-          .lean()
-          .exec();
-          
-        console.log(`Retrieved ${incidents.length} pedestrian KSI incidents in division ${division}`);
-        
-        // Double-check date filtering
-        if (startDate || endDate) {
-          const filteredIncidents = incidents.filter(incident => {
-            if (!incident.DATE || typeof incident.DATE !== "string") {
-              return false;
-            }
-            return isDateInRange(incident.DATE, startDate, endDate);
-          });
-          
-          console.log(`After additional date filtering, returning ${filteredIncidents.length} pedestrian KSI incidents in division ${division}`);
-          return filteredIncidents;
-        }
-        
-        return incidents;
+        return await applyDateFilter(PedestrianKSI, { DIVISION: division }, startDate, endDate, limit, offset);
       } catch (error) {
         console.error(`Error fetching pedestrian KSI incidents by division ${division}:`, error);
         throw new Error(`Error fetching pedestrian KSI incidents by division: ${error.message}`);
       }
     },
-    pedestrianKSIByNeighborhood: async (_, { neighborhood, startDate, endDate }) => {
+    pedestrianKSIByNeighborhood: async (_, { neighborhood, startDate, endDate, limit = 2000, offset = 0 }) => {
       try {
-        console.log(`Fetching pedestrian KSI incidents for neighborhood ${neighborhood} with date range: ${startDate} - ${endDate}`);
-        
-        // Get incidents by neighborhood
-        const incidentsByNeighborhood = await PedestrianKSI.find({ NEIGHBOURHOOD_158: neighborhood })
-        console.log(`Total pedestrian KSI incidents in neighborhood ${neighborhood}: ${incidentsByNeighborhood.length}`)
-
-        // Filter by date range if provided
-        if (startDate || endDate) {
-          const filteredIncidents = incidentsByNeighborhood.filter((incident) => {
-            // Check if DATE exists and is a string
-            if (!incident.DATE || typeof incident.DATE !== "string") {
-              return false
-            }
-            
-            try {
-              return isDateInRange(incident.DATE, startDate, endDate)
-            } catch (error) {
-              console.error(`Error in date filtering for incident ${incident._id}:`, error)
-              return false
-            }
-          })
-
-          console.log(
-            `Filtered to ${filteredIncidents.length} pedestrian KSI incidents in neighborhood ${neighborhood} within date range`,
-          )
-          return filteredIncidents
-        }
-
-        return incidentsByNeighborhood
+        return await applyDateFilter(PedestrianKSI, { NEIGHBOURHOOD_158: neighborhood }, startDate, endDate, limit, offset);
       } catch (error) {
-        console.error(`Error fetching pedestrian KSI incidents by neighborhood ${neighborhood}:`, error)
-        throw new Error(`Error fetching pedestrian KSI incidents by neighborhood: ${error.message}`)
+        console.error(`Error fetching pedestrian KSI incidents by neighborhood ${neighborhood}:`, error);
+        throw new Error(`Error fetching pedestrian KSI incidents by neighborhood: ${error.message}`);
       }
     },
 

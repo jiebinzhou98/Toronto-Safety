@@ -10,14 +10,34 @@ function FilterSidebar({
   applyFilters = () => {},
   selectedDivision = "",
   setSelectedDivision = () => {},
+  selectedLocations = [],
+  updateSelectedLocations = () => {},
 }) {
   const [startDate, setStartDate] = useState(dateRange.startDate || "")
   const [endDate, setEndDate] = useState(dateRange.endDate || "")
   const [isDateFilterActive, setIsDateFilterActive] = useState(!!dateRange.startDate || !!dateRange.endDate)
   const [dateError, setDateError] = useState("")
   const [isApplying, setIsApplying] = useState(false)
+  const [locationFilters, setLocationFilters] = useState({
+    "11": false, // Downtown
+    "14": false, // East York
+    "22": false, // North York
+    "31": false, // Etobicoke
+    "32": false, // York
+    "41": false, // Scarborough
+    "51": false, // Toronto East
+  })
 
   const divisions = ["11", "14", "22", "31", "32", "41", "51"] // Customize this list
+  const divisionNames = {
+    "11": "Downtown",
+    "14": "East York",
+    "22": "North York",
+    "31": "Etobicoke",
+    "32": "York",
+    "41": "Scarborough",
+    "51": "Toronto East",
+  }
 
   // Update local state when dateRange prop changes
   useEffect(() => {
@@ -54,15 +74,62 @@ function FilterSidebar({
       endDate: endDate,
     })
 
+    // Update the selected division based on location filters
+    const activeLocations = Object.entries(locationFilters).filter(([_, isActive]) => isActive).map(([div, _]) => div);
+    
+    if (activeLocations.length === 1) {
+      // If only one location is selected, use that as the division filter
+      setSelectedDivision(activeLocations[0]);
+    } else if (activeLocations.length > 1) {
+      // If multiple locations are selected, use the "multiple" value
+      setSelectedDivision("multiple");
+    } else {
+      // If no locations are selected, clear the division filter
+      setSelectedDivision("");
+    }
+    
+    // Send the active locations to the parent component
+    updateSelectedLocations(activeLocations);
+
     // Call the applyFilters function from props
     applyFilters()
 
-    console.log("Applied filters:", { startDate, endDate, selectedDivision })
+    console.log("Applied filters:", { startDate, endDate, selectedDivision, locationFilters, activeLocations })
 
     // Reset applying state after a short delay
     setTimeout(() => {
       setIsApplying(false)
     }, 1000)
+  }
+
+  const handleLocationFilterToggle = (division) => {
+    const newLocationFilters = {
+      ...locationFilters,
+      [division]: !locationFilters[division]
+    };
+    
+    setLocationFilters(newLocationFilters);
+    
+    // Update the selected locations array for the parent component
+    const activeLocations = Object.entries(newLocationFilters)
+      .filter(([_, isActive]) => isActive)
+      .map(([div, _]) => div);
+    
+    updateSelectedLocations(activeLocations);
+  }
+
+  const handleClearLocationFilters = () => {
+    setLocationFilters({
+      "11": false,
+      "14": false,
+      "22": false,
+      "31": false,
+      "32": false,
+      "41": false,
+      "51": false,
+    });
+    setSelectedDivision("");
+    updateSelectedLocations([]);
   }
 
   const handleClearDateFilter = () => {
@@ -228,6 +295,66 @@ function FilterSidebar({
 
       <div style={{ marginTop: "30px" }}>
         <h3>Filter Options</h3>
+
+        {/* Location Filter */}
+        <div style={{ marginTop: "15px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px" }}>
+            <label style={{ fontWeight: Object.values(locationFilters).some(v => v) ? "bold" : "normal" }}>
+              Location Filter:
+            </label>
+            {Object.values(locationFilters).some(v => v) && (
+              <span
+                style={{
+                  color: "#4285F4",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+                onClick={handleClearLocationFilters}
+              >
+                Clear
+              </span>
+            )}
+          </div>
+          
+          <div style={{ 
+            marginTop: "8px", 
+            padding: "8px", 
+            border: "1px solid #e0e0e0", 
+            borderRadius: "4px",
+            maxHeight: "150px",
+            overflowY: "auto" 
+          }}>
+            {divisions.map((division) => (
+              <div key={division}>
+                <label style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "8px", 
+                  cursor: "pointer",
+                  padding: "4px 0",
+                  fontSize: "14px"
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={locationFilters[division]}
+                    onChange={() => handleLocationFilterToggle(division)}
+                  />
+                  <span>{divisionNames[division]} (Division {division})</span>
+                </label>
+              </div>
+            ))}
+          </div>
+          
+          {Object.values(locationFilters).some(v => v) && (
+            <div style={{ fontSize: "12px", marginTop: "4px", color: "#666" }}>
+              Showing markers in: {Object.entries(locationFilters)
+                .filter(([_, isActive]) => isActive)
+                .map(([div, _]) => divisionNames[div])
+                .join(", ")}
+            </div>
+          )}
+        </div>
 
         {/* Date Range Filter */}
         <div style={{ marginTop: "15px" }}>

@@ -22,7 +22,7 @@ const center = {
   lng: -79.4163,
 }
 
-function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate: "" }, setIsLoading = () => {}, selectedDivision = "" }) {
+function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate: "" }, setIsLoading = () => {}, selectedDivision = "", selectedLocations = [] }) {
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
@@ -45,8 +45,9 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
   })
   const [errors, setErrors] = useState({})
   const [divisionMarkers, setDivisionMarkers] = useState([]) // State for division markers
+  const [selectedDivisions, setSelectedDivisions] = useState([]) // Track multiple selected divisions
 
-  // Example division coordinates (replace with actual data)
+  // Division coordinates (Toronto police divisions)
   const divisionCoordinates = {
     "11": { lat: 43.649, lng: -79.452 },
     "14": { lat: 43.655, lng: -79.419 },
@@ -57,15 +58,154 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     "51": { lat: 43.658, lng: -79.365 },
   }
 
-  useEffect(() => {
-    if (selectedDivision && divisionCoordinates[selectedDivision]) {
-      const divisionCenter = divisionCoordinates[selectedDivision]
-      setMapCenter(divisionCenter) // Center the map on the selected division
-      setDivisionMarkers([divisionCenter]) // Highlight the selected division
-    } else {
-      setDivisionMarkers([]) // Clear markers if no division is selected
+  // Division areas - approximate bounding boxes for each division
+  const divisionBounds = {
+    "11": { 
+      north: 43.675, south: 43.625, 
+      east: -79.400, west: -79.480
+    },
+    "14": { 
+      north: 43.685, south: 43.635, 
+      east: -79.380, west: -79.450
+    },
+    "22": { 
+      north: 43.690, south: 43.640, 
+      east: -79.460, west: -79.520
+    },
+    "31": { 
+      north: 43.740, south: 43.690, 
+      east: -79.460, west: -79.530
+    },
+    "32": { 
+      north: 43.760, south: 43.700, 
+      east: -79.370, west: -79.430
+    },
+    "41": { 
+      north: 43.750, south: 43.700, 
+      east: -79.220, west: -79.300
+    },
+    "51": { 
+      north: 43.680, south: 43.630, 
+      east: -79.330, west: -79.400
     }
-  }, [selectedDivision])
+  }
+
+  const divisionNames = {
+    "11": "Downtown",
+    "14": "East York",
+    "22": "North York",
+    "31": "Etobicoke",
+    "32": "York",
+    "41": "Scarborough",
+    "51": "Toronto East",
+  }
+
+  // Function to check if a point is within a bounding box
+  const isPointInBounds = (lat, lng, bounds) => {
+    return (
+      lat <= bounds.north &&
+      lat >= bounds.south &&
+      lng <= bounds.east &&
+      lng >= bounds.west
+    );
+  }
+
+  // Function to check if a point is within any of the selected divisions
+  const isPointInSelectedDivisions = (lat, lng) => {
+    // If no division filter is active, show all points
+    if (!selectedDivision || selectedDivision === "") {
+      return true;
+    }
+
+    // For multiple selections, check against each selected division's bounds
+    if (selectedDivision === "multiple") {
+      return selectedLocations.some(divId => 
+        divisionBounds[divId] && isPointInBounds(lat, lng, divisionBounds[divId])
+      );
+    }
+    
+    // For single division selection
+    const bounds = divisionBounds[selectedDivision];
+    return bounds && isPointInBounds(lat, lng, bounds);
+  }
+
+  // Update when selected division changes
+  useEffect(() => {
+    console.log("Selected division changed:", selectedDivision);
+    console.log("Selected locations:", selectedLocations);
+    
+    // Apply location filter
+    if (selectedDivision === "multiple" && selectedLocations.length > 0) {
+      console.log("Multiple divisions selected:", selectedLocations);
+      
+      // For multiple divisions, show markers for each selected division
+      const markers = selectedLocations
+        .filter(div => divisionCoordinates[div]) // Make sure we have coordinates
+        .map(div => divisionCoordinates[div]);
+      
+      setDivisionMarkers(markers);
+      setSelectedDivisions(selectedLocations);
+      
+      // If we have selected divisions, fit the map to show all of them
+      if (markers.length > 0 && map) {
+        const bounds = new window.google.maps.LatLngBounds();
+        
+        // Create larger bounds for each division
+        selectedLocations.forEach(divId => {
+          if (divisionBounds[divId]) {
+            const divBound = divisionBounds[divId];
+            // Add the corners of the bounding box
+            bounds.extend({ lat: divBound.north, lng: divBound.east });
+            bounds.extend({ lat: divBound.north, lng: divBound.west });
+            bounds.extend({ lat: divBound.south, lng: divBound.east });
+            bounds.extend({ lat: divBound.south, lng: divBound.west });
+          }
+        });
+        
+        map.fitBounds(bounds);
+        
+        // Calculate the center point of selected divisions
+        const center = {
+          lat: (bounds.getNorthEast().lat() + bounds.getSouthWest().lat()) / 2,
+          lng: (bounds.getNorthEast().lng() + bounds.getSouthWest().lng()) / 2
+        };
+        setMapCenter(center);
+        console.log("Map centered on multiple divisions:", center);
+      }
+    } 
+    else if (selectedDivision && divisionBounds[selectedDivision]) {
+      console.log("Single division selected:", selectedDivision);
+      
+      // Single division selected - center on the division and zoom appropriately
+      const divBound = divisionBounds[selectedDivision];
+      const divCenter = divisionCoordinates[selectedDivision];
+      setMapCenter(divCenter);
+      setDivisionMarkers([divCenter]);
+      setSelectedDivisions([selectedDivision]);
+      
+      // Create a bounds object to fit the division
+      if (map) {
+        const bounds = new window.google.maps.LatLngBounds();
+        bounds.extend({ lat: divBound.north, lng: divBound.east });
+        bounds.extend({ lat: divBound.north, lng: divBound.west });
+        bounds.extend({ lat: divBound.south, lng: divBound.east });
+        bounds.extend({ lat: divBound.south, lng: divBound.west });
+        map.fitBounds(bounds);
+      }
+      
+      console.log("Map centered on division:", divCenter);
+    } 
+    else {
+      console.log("No division selected, clearing division markers");
+      // No division selected
+      setDivisionMarkers([]);
+      setSelectedDivisions([]);
+    }
+
+    // Make sure loading state is reset after location filter changes
+    setIsLoading(false);
+    
+  }, [selectedDivision, map, selectedLocations, setIsLoading]);
 
   // Prepare date variables for GraphQL queries
   const dateVariables = {
@@ -77,7 +217,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
   const queryVariables = {
     ...(dateRange?.startDate && { startDate: dateRange.startDate }),
     ...(dateRange?.endDate && { endDate: dateRange.endDate }),
-    limit: 500,   // Reduce the limit to 500 records per request
+    limit: 2000,   // Increase the limit to 2000 records per request to allow more data
     offset: 0     // Start from the beginning
   };
 
@@ -214,18 +354,29 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
   // Effect to handle loading state
   useEffect(() => {
-    const isLoading =
+    const isCurrentlyLoading =
       fatalAccidentsLoading ||
       shootingIncidentsLoading ||
       homicidesLoading ||
       breakAndEnterLoading ||
-      pedestrianKSILoading
-    setIsLoading(isLoading)
+      pedestrianKSILoading;
+    
+    console.log("Loading state:", isCurrentlyLoading);
+    setIsLoading(isCurrentlyLoading);
 
-    if (isLoading) {
-      console.log("Loading data...")
+    // Ensure loading is turned off after a timeout even if queries get stuck
+    if (isCurrentlyLoading) {
+      console.log("Loading data...");
+      // Set a timeout to force isLoading to false if it takes too long
+      const timeoutId = setTimeout(() => {
+        console.log("Forcing loading state to complete after timeout");
+        setIsLoading(false);
+      }, 5000); // Force loading to complete after 5 seconds
+
+      // Clear the timeout if loading completes normally
+      return () => clearTimeout(timeoutId);
     } else {
-      console.log("Data loading complete")
+      console.log("Data loading complete");
     }
   }, [
     fatalAccidentsLoading,
@@ -234,25 +385,21 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     breakAndEnterLoading,
     pedestrianKSILoading,
     setIsLoading,
-  ])
+  ]);
 
   // Function to refetch all active queries with date range
   const refetchAllActiveQueries = useCallback(() => {
     console.log("Refetching all active queries with date range:", queryVariables)
 
     if (activeFilters.fatalAccidents) {
-      refetchFatalAccidents({
-        variables: queryVariables,
-      }).catch((error) => {
+      refetchFatalAccidents(queryVariables).catch((error) => {
         console.error("Error refetching fatal accidents:", error)
         setErrors((prev) => ({ ...prev, fatalAccidents: error.message }))
       })
     }
 
     if (activeFilters.shootingIncidents) {
-      refetchShootingIncidents({
-        variables: queryVariables,
-      }).catch((error) => {
+      refetchShootingIncidents(queryVariables).catch((error) => {
         console.error("Error refetching shooting incidents:", error)
         setErrors((prev) => ({ ...prev, shootingIncidents: error.message }))
         setIsLoading(false)
@@ -260,9 +407,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     }
 
     if (activeFilters.homicides) {
-      refetchHomicides({
-        variables: queryVariables,
-      }).catch((error) => {
+      refetchHomicides(queryVariables).catch((error) => {
         console.error("Error refetching homicides:", error)
         setErrors((prev) => ({ ...prev, homicides: error.message }))
         setIsLoading(false)
@@ -271,9 +416,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
     if (activeFilters.breakAndEnterIncidents) {
       console.log("Attempting to refetch break and enter incidents...")
-      refetchBreakAndEnter({
-        variables: queryVariables,
-      }).catch((error) => {
+      refetchBreakAndEnter(queryVariables).catch((error) => {
         console.error("Error refetching break and enter incidents:", error)
         setErrors((prev) => ({ ...prev, breakAndEnterIncidents: `${error.message}. Try removing date filters.` }))
         setIsLoading(false)
@@ -281,9 +424,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     }
 
     if (activeFilters.pedestrianKSI) {
-      refetchPedestrianKSI({
-        variables: queryVariables,
-      }).catch((error) => {
+      refetchPedestrianKSI(queryVariables).catch((error) => {
         console.error("Error refetching pedestrian KSI incidents:", error)
         setErrors((prev) => ({ ...prev, pedestrianKSI: error.message }))
         setIsLoading(false)
@@ -425,6 +566,11 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     }
   }
 
+  // Helper function to check if a marker should be displayed based on its coordinates
+  const shouldShowMarker = (lat, lng) => {
+    return isPointInSelectedDivisions(lat, lng);
+  }
+
   return (
     <div style={{ flex: 1, position: "relative" }}>
       {/* Error messages */}
@@ -456,13 +602,39 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
         </div>
       )}
 
+      {/* Location filter info overlay */}
+      {selectedDivision && (
+        <div
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            zIndex: 1000,
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+            fontSize: "14px",
+            maxWidth: "300px",
+          }}
+        >
+          <div style={{ fontWeight: "bold", marginBottom: "4px" }}>Location Filter Active:</div>
+          <div>
+            {selectedDivision === "multiple" 
+              ? selectedLocations.map(div => divisionNames[div]).join(", ")
+              : `${divisionNames[selectedDivision] || selectedDivision}`}
+          </div>
+        </div>
+      )}
+
       {/* Date filter info overlay */}
       {(dateRange.startDate || dateRange.endDate) && (
         <div
           style={{
             position: "absolute",
-            top: "10px",
-            right: "10px",
+            top: selectedDivision ? "70px" : "10px",
+            left: "10px",
+            right: selectedDivision ? "auto" : "10px",
             zIndex: 1000,
             backgroundColor: "rgba(255, 255, 255, 0.9)",
             padding: "8px 12px",
@@ -490,13 +662,13 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
       )}
 
       <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={12} onLoad={onLoad} onUnmount={onUnmount}>
-        {/* Division Marker */}
+        {/* Division Markers */}
         {divisionMarkers.map((marker, index) => (
           <Marker
-            key={index}
+            key={`division-${index}`}
             position={marker}
             icon={{
-              url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+              url: "http://maps.google.com/mapfiles/ms/icons/purple-pushpin.png",
               scaledSize: new window.google.maps.Size(30, 30),
             }}
           />
@@ -504,7 +676,11 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
         {/* Display Fatal Accident Markers */}
         {activeFilters.fatalAccidents &&
-          fatalAccidentsData?.fatalAccidents?.map((accident) =>
+          fatalAccidentsData?.fatalAccidents?.filter(accident => 
+            !selectedDivision || 
+            accident.LATITUDE && accident.LONGITUDE && 
+            shouldShowMarker(accident.LATITUDE, accident.LONGITUDE)
+          ).map((accident) =>
             accident.LATITUDE && accident.LONGITUDE ? (
               <Marker
                 key={accident._id}
@@ -523,7 +699,11 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
         {/* Display Shooting Incident Markers */}
         {activeFilters.shootingIncidents &&
-          shootingIncidentsData?.shootingIncidents?.map((incident) =>
+          shootingIncidentsData?.shootingIncidents?.filter(incident => 
+            !selectedDivision || 
+            incident.LAT_WGS84 && incident.LONG_WGS84 && 
+            shouldShowMarker(incident.LAT_WGS84, incident.LONG_WGS84)
+          ).map((incident) =>
             incident.LAT_WGS84 && incident.LONG_WGS84 ? (
               <Marker
                 key={incident._id}
@@ -542,7 +722,11 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
         {/* Display Homicide Markers */}
         {activeFilters.homicides &&
-          homicidesData?.homicides?.map((homicide) =>
+          homicidesData?.homicides?.filter(homicide => 
+            !selectedDivision || 
+            homicide.LAT_WGS84 && homicide.LONG_WGS84 && 
+            shouldShowMarker(homicide.LAT_WGS84, homicide.LONG_WGS84)
+          ).map((homicide) =>
             homicide.LAT_WGS84 && homicide.LONG_WGS84 ? (
               <Marker
                 key={homicide._id}
@@ -561,7 +745,11 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
         {/* Display Break and Enter Incident Markers */}
         {activeFilters.breakAndEnterIncidents &&
-          breakAndEnterData?.breakAndEnterIncidents?.map((incident) =>
+          breakAndEnterData?.breakAndEnterIncidents?.filter(incident => 
+            !selectedDivision || 
+            incident.LAT_WGS84 && incident.LONG_WGS84 && 
+            shouldShowMarker(incident.LAT_WGS84, incident.LONG_WGS84)
+          ).map((incident) =>
             incident.LAT_WGS84 && incident.LONG_WGS84 ? (
               <Marker
                 key={incident._id}
@@ -580,7 +768,11 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
         {/* Display Pedestrian KSI Incident Markers */}
         {activeFilters.pedestrianKSI &&
-          pedestrianKSIData?.pedestrianKSI?.map((incident) =>
+          pedestrianKSIData?.pedestrianKSI?.filter(incident => 
+            !selectedDivision || 
+            incident.LATITUDE && incident.LONGITUDE && 
+            shouldShowMarker(incident.LATITUDE, incident.LONGITUDE)
+          ).map((incident) =>
             incident.LATITUDE && incident.LONGITUDE ? (
               <Marker
                 key={incident._id}
