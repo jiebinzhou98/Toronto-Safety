@@ -152,6 +152,10 @@ function App() {
     }));
   };
 
+  const updateActiveFilters = (newFilters) => {
+    setActiveFilters(newFilters);
+  };
+
   const applyFilters = () => {
     console.log("Filters applied:", { activeFilters, dateRange, selectedDivision, selectedLocations });
     setIsLoading(true);
@@ -186,10 +190,14 @@ function App() {
                     <div className="map-section">
                       <MapContainer
                         activeFilters={activeFilters}
+                        updateActiveFilters={updateActiveFilters}
                         dateRange={dateRange}
+                        setDateRange={setDateRange}
                         setIsLoading={setIsLoading}
                         selectedDivision={selectedDivision}
+                        setSelectedDivision={setSelectedDivision}
                         selectedLocations={selectedLocations}
+                        updateSelectedLocations={updateSelectedLocations}
                       />
                     </div>
                     <div className="intelligent-analysis">
