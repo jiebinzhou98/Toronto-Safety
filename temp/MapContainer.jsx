@@ -48,9 +48,6 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
   const isDataFetching = useRef(false)
   const queryFunctions = useRef({})
 
-  // Add InfoWindow ref for better unmounting control
-  const infoWindowRef = useRef(null);
-
   // Division names for reference
   const divisionNames = {
     "11": "Downtown",
@@ -72,7 +69,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     "41": { lat: 43.725, lng: -79.265 },
     "51": { lat: 43.658, lng: -79.365 },
   }
-
+  
   // Division bounds
   const divisionBounds = {
     "11": { north: 43.675, south: 43.625, east: -79.400, west: -79.480 },
@@ -203,15 +200,15 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
 
   // Track loading state
   useEffect(() => {
-    const isLoading =
-      fatalAccidentsLoading ||
-      shootingIncidentsLoading ||
-      homicidesLoading ||
-      breakAndEnterLoading ||
+    const isLoading = 
+      fatalAccidentsLoading || 
+      shootingIncidentsLoading || 
+      homicidesLoading || 
+      breakAndEnterLoading || 
       pedestrianKSILoading
     
     setIsLoading(isLoading)
-
+    
     if (!isLoading) {
       isDataFetching.current = false
     }
@@ -245,98 +242,22 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     return isPointInSelectedDivisions(lat, lng)
   }, [isPointInSelectedDivisions])
   
-  // Memoize marker data to prevent excessive re-rendering
-  const fatalAccidentMarkers = useMemo(() => {
-    if (!activeFilters.fatalAccidents || !fatalAccidentsData?.fatalAccidents) return [];
-    
-    return fatalAccidentsData.fatalAccidents
-      .filter(accident => 
-        accident.LATITUDE && accident.LONGITUDE && 
-        (!selectedDivision || shouldShowMarker(accident.LATITUDE, accident.LONGITUDE))
-      );
-  }, [activeFilters.fatalAccidents, fatalAccidentsData, selectedDivision, shouldShowMarker]);
-  
-  const shootingIncidentMarkers = useMemo(() => {
-    if (!activeFilters.shootingIncidents || !shootingIncidentsData?.shootingIncidents) return [];
-    
-    return shootingIncidentsData.shootingIncidents
-      .filter(incident => 
-        incident.LAT_WGS84 && incident.LONG_WGS84 && 
-        (!selectedDivision || shouldShowMarker(incident.LAT_WGS84, incident.LONG_WGS84))
-      );
-  }, [activeFilters.shootingIncidents, shootingIncidentsData, selectedDivision, shouldShowMarker]);
-  
-  const homicideMarkers = useMemo(() => {
-    if (!activeFilters.homicides || !homicidesData?.homicides) return [];
-    
-    return homicidesData.homicides
-      .filter(homicide => 
-        homicide.LAT_WGS84 && homicide.LONG_WGS84 && 
-        (!selectedDivision || shouldShowMarker(homicide.LAT_WGS84, homicide.LONG_WGS84))
-      );
-  }, [activeFilters.homicides, homicidesData, selectedDivision, shouldShowMarker]);
-  
-  const breakAndEnterMarkers = useMemo(() => {
-    if (!activeFilters.breakAndEnterIncidents || !breakAndEnterData?.breakAndEnterIncidents) return [];
-    
-    return breakAndEnterData.breakAndEnterIncidents
-      .filter(incident => 
-        incident.LAT_WGS84 && incident.LONG_WGS84 && 
-        (!selectedDivision || shouldShowMarker(incident.LAT_WGS84, incident.LONG_WGS84))
-      );
-  }, [activeFilters.breakAndEnterIncidents, breakAndEnterData, selectedDivision, shouldShowMarker]);
-  
-  const pedestrianKSIMarkers = useMemo(() => {
-    if (!activeFilters.pedestrianKSI || !pedestrianKSIData?.pedestrianKSI) return [];
-    
-    return pedestrianKSIData.pedestrianKSI
-      .filter(incident => 
-        incident.LATITUDE && incident.LONGITUDE && 
-        (!selectedDivision || shouldShowMarker(incident.LATITUDE, incident.LONGITUDE))
-      );
-  }, [activeFilters.pedestrianKSI, pedestrianKSIData, selectedDivision, shouldShowMarker]);
-  
   // Handle marker click
   const handleMarkerClick = useCallback((incident, type) => {
-    // Create position object
-    const position = type === 'accident' || type === 'pedestrianKSI' 
-      ? { lat: incident.LATITUDE, lng: incident.LONGITUDE }
-      : { lat: incident.LAT_WGS84, lng: incident.LONG_WGS84 };
-    
-    // Set selected marker
+    // Set marker info for InfoWindow
     setSelectedMarker({
       incident,
       type,
-      position
-    });
-  }, []);
+      position: type === 'accident' || type === 'pedestrianKSI' 
+        ? { lat: incident.LATITUDE, lng: incident.LONGITUDE }
+        : { lat: incident.LAT_WGS84, lng: incident.LONG_WGS84 }
+    })
+  }, [])
   
   // Close InfoWindow
   const closeInfoWindow = useCallback(() => {
-    setSelectedMarker(null);
-  }, []);
-  
-  // Ensure proper cleanup of InfoWindow
-  useEffect(() => {
-    if (!selectedMarker) {
-      // Reset the InfoWindow reference when it's closed
-      infoWindowRef.current = null;
-      // Remove any stray elements
-      const strayElements = document.querySelectorAll('.gm-style-iw');
-      strayElements.forEach(el => el.parentNode.removeChild(el));
-    }
-  }, [selectedMarker]);
-  
-  // Track first render and map initialization
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      isInitialRender.current = false;
-    }, 500);
-    
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
+    setSelectedMarker(null)
+  }, [])
   
   // Set division markers
   useEffect(() => {
@@ -378,12 +299,12 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
   return (
     <div style={{ flex: 1, position: "relative" }}>
       {/* AI Command Interface */}
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
+      <div
+        style={{
+          position: "absolute",
+          top: "10px",
           right: "10px",
-            zIndex: 1000,
+          zIndex: 1000,
           backgroundColor: "rgba(255, 255, 255, 0.9)",
           padding: "15px",
           borderRadius: "10px",
@@ -409,21 +330,19 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
             }}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                // processPrompt(promptInput)
+                processPrompt(promptInput)
               }
             }}
           />
           <button
-            onClick={() => {
-              // processPrompt(promptInput)
-            }}
+            onClick={() => processPrompt(promptInput)}
             style={{
               backgroundColor: "#4285F4",
               color: "white",
               border: "none",
               borderRadius: "0 4px 4px 0",
               padding: "0 15px",
-            fontSize: "14px",
+              fontSize: "14px",
               cursor: "pointer",
             }}
           >
@@ -431,7 +350,7 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
           </button>
         </div>
       </div>
-
+      
       {/* Location filter info */}
       {selectedDivision && (
         <div
@@ -464,14 +383,6 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
         onLoad={onLoad} 
         onUnmount={onUnmount}
         onClick={closeInfoWindow}
-        options={{
-          maxZoom: 18,
-          minZoom: 8,
-          fullscreenControl: true,
-          mapTypeControl: true,
-          streetViewControl: false,
-          clickableIcons: false
-        }}
       >
         {/* Division Markers */}
         {divisionMarkers.map((marker, index) => (
@@ -484,9 +395,14 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
             }}
           />
         ))}
-
+        
         {/* Fatal Accident Markers */}
-        {fatalAccidentMarkers.map((accident) => 
+        {activeFilters.fatalAccidents &&
+          fatalAccidentsData?.fatalAccidents?.filter(accident => 
+            !selectedDivision || 
+            (accident.LATITUDE && accident.LONGITUDE && 
+            shouldShowMarker(accident.LATITUDE, accident.LONGITUDE))
+          ).map((accident) => 
             accident.LATITUDE && accident.LONGITUDE ? (
               <Marker
                 key={accident._id}
@@ -494,17 +410,22 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
                   lat: accident.LATITUDE,
                   lng: accident.LONGITUDE,
                 }}
-              onClick={() => handleMarkerClick(accident, 'accident')}
+                onClick={() => handleMarkerClick(accident, 'accident')}
                 icon={{
                   url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
                   scaledSize: new window.google.maps.Size(30, 30),
                 }}
               />
-          ) : null
+            ) : null
           )}
 
         {/* Shooting Incident Markers */}
-        {shootingIncidentMarkers.map((incident) =>
+        {activeFilters.shootingIncidents &&
+          shootingIncidentsData?.shootingIncidents?.filter(incident => 
+            !selectedDivision || 
+            (incident.LAT_WGS84 && incident.LONG_WGS84 && 
+            shouldShowMarker(incident.LAT_WGS84, incident.LONG_WGS84))
+          ).map((incident) =>
             incident.LAT_WGS84 && incident.LONG_WGS84 ? (
               <Marker
                 key={incident._id}
@@ -512,17 +433,22 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
                   lat: incident.LAT_WGS84,
                   lng: incident.LONG_WGS84,
                 }}
-              onClick={() => handleMarkerClick(incident, 'shooting')}
+                onClick={() => handleMarkerClick(incident, 'shooting')}
                 icon={{
                   url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
                   scaledSize: new window.google.maps.Size(30, 30),
                 }}
               />
-          ) : null
+            ) : null
           )}
 
         {/* Homicide Markers */}
-        {homicideMarkers.map((homicide) =>
+        {activeFilters.homicides &&
+          homicidesData?.homicides?.filter(homicide => 
+            !selectedDivision || 
+            (homicide.LAT_WGS84 && homicide.LONG_WGS84 && 
+            shouldShowMarker(homicide.LAT_WGS84, homicide.LONG_WGS84))
+          ).map((homicide) =>
             homicide.LAT_WGS84 && homicide.LONG_WGS84 ? (
               <Marker
                 key={homicide._id}
@@ -530,17 +456,22 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
                   lat: homicide.LAT_WGS84,
                   lng: homicide.LONG_WGS84,
                 }}
-              onClick={() => handleMarkerClick(homicide, 'homicide')}
+                onClick={() => handleMarkerClick(homicide, 'homicide')}
                 icon={{
                   url: "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png",
                   scaledSize: new window.google.maps.Size(30, 30),
                 }}
               />
-          ) : null
+            ) : null
           )}
 
         {/* Break and Enter Markers */}
-        {breakAndEnterMarkers.map((incident) =>
+        {activeFilters.breakAndEnterIncidents &&
+          breakAndEnterData?.breakAndEnterIncidents?.filter(incident => 
+            !selectedDivision || 
+            (incident.LAT_WGS84 && incident.LONG_WGS84 && 
+            shouldShowMarker(incident.LAT_WGS84, incident.LONG_WGS84))
+          ).map((incident) =>
             incident.LAT_WGS84 && incident.LONG_WGS84 ? (
               <Marker
                 key={incident._id}
@@ -548,17 +479,22 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
                   lat: incident.LAT_WGS84,
                   lng: incident.LONG_WGS84,
                 }}
-              onClick={() => handleMarkerClick(incident, 'breakAndEnter')}
+                onClick={() => handleMarkerClick(incident, 'breakAndEnter')}
                 icon={{
                   url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
                   scaledSize: new window.google.maps.Size(30, 30),
                 }}
               />
-          ) : null
+            ) : null
           )}
 
         {/* Pedestrian KSI Markers */}
-        {pedestrianKSIMarkers.map((incident) =>
+        {activeFilters.pedestrianKSI &&
+          pedestrianKSIData?.pedestrianKSI?.filter(incident => 
+            !selectedDivision || 
+            (incident.LATITUDE && incident.LONGITUDE && 
+            shouldShowMarker(incident.LATITUDE, incident.LONGITUDE))
+          ).map((incident) =>
             incident.LATITUDE && incident.LONGITUDE ? (
               <Marker
                 key={incident._id}
@@ -566,24 +502,20 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
                   lat: incident.LATITUDE,
                   lng: incident.LONGITUDE,
                 }}
-              onClick={() => handleMarkerClick(incident, 'pedestrianKSI')}
+                onClick={() => handleMarkerClick(incident, 'pedestrianKSI')}
                 icon={{
                   url: "http://maps.google.com/mapfiles/ms/icons/purple-dot.png",
                   scaledSize: new window.google.maps.Size(30, 30),
                 }}
               />
-          ) : null
-        )}
-        
-        {/* InfoWindow that stays attached to the marker */}
+            ) : null
+          )}
+          
+        {/* Single InfoWindow */}
         {selectedMarker && (
           <InfoWindow
             position={selectedMarker.position}
             onCloseClick={closeInfoWindow}
-            options={{
-              pixelOffset: new window.google.maps.Size(0, -30),
-              zIndex: 1
-            }}
           >
             <div style={{ padding: "5px", maxWidth: "300px" }}>
               {selectedMarker.type === 'accident' && (
@@ -647,4 +579,4 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
   )
 }
 
-export default MapContainer
+export default MapContainer 
