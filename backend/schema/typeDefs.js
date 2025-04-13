@@ -89,21 +89,21 @@ const typeDefs = gql`
     EVENT_UNIQUE_ID: String
     REPORT_DATE: String
     OCC_DATE: String
-    OCC_YEAR: Int
+    OCC_YEAR: String
     OCC_MONTH: String
-    OCC_DAY: Int
+    OCC_DAY: String
     OCC_DOW: String
-    OCC_HOUR: Int
+    OCC_HOUR: String
     DIVISION: String
     LOCATION_TYPE: String
     PREMISES_TYPE: String
-    UCR_CODE: Int
-    UCR_EXT: Int
+    UCR_CODE: String
+    UCR_EXT: String
     OFFENCE: String
     MCI_CATEGORY: String
-    HOOD_158: Int
+    HOOD_158: String
     NEIGHBOURHOOD_158: String
-    HOOD_140: Int
+    HOOD_140: String
     NEIGHBOURHOOD_140: String
     LONG_WGS84: Float
     LAT_WGS84: Float
@@ -126,7 +126,7 @@ const typeDefs = gql`
     INJURY: String
     DIVISION: String
     NEIGHBOURHOOD_158: String
-    HOOD_158: Int
+    HOOD_158: String
     x: Float
     y: Float
   }

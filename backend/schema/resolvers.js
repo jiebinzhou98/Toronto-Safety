@@ -267,31 +267,89 @@ const resolvers = {
     // Break and Enter Incidents
     breakAndEnterIncidents: async (_, { startDate, endDate, limit = 1000, offset = 0 }) => {
       try {
+        console.log(`Fetching break and enter incidents with date range: ${startDate} - ${endDate}`);
+        
         let query = {};
         if (startDate || endDate) {
-          query.OCC_DATE = {};
-          if (startDate) {
-            query.OCC_DATE.$gte = formatDateForMongoDB(startDate);
-          }
-          if (endDate) {
-            query.OCC_DATE.$lte = formatDateForMongoDB(endDate);
+          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
+          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
+          
+          if (formattedStartDate || formattedEndDate) {
+            query.OCC_DATE = {};
+            if (formattedStartDate) query.OCC_DATE.$gte = formattedStartDate;
+            if (formattedEndDate) query.OCC_DATE.$lte = formattedEndDate;
           }
         }
 
+        console.log('MongoDB Query for break and enter incidents:', JSON.stringify(query));
+
+        // Execute query with pagination and timeout
         const incidents = await BreakAndEnterIncident.find(query)
-          .limit(limit)
+          .limit(Math.min(limit, 500)) // Limit maximum results to 500
           .skip(offset)
+          .maxTimeMS(30000) // Set maximum execution time to 30 seconds
           .lean()
           .exec();
 
+        console.log(`Retrieved ${incidents.length} break and enter incidents`);
         return incidents;
       } catch (error) {
         console.error("Error fetching break and enter incidents:", error);
         throw new Error(`Error fetching break and enter incidents: ${error.message}`);
       }
     },
+    breakAndEnterIncidentsByDivision: async (_, { division, startDate, endDate, limit = 1000, offset = 0 }) => {
+      try {
+        console.log(`Fetching break and enter incidents for division ${division} with date range: ${startDate} - ${endDate}`);
+        
+        // Get incidents by division
+        const query = { DIVISION: division };
+        
+        if (startDate || endDate) {
+          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
+          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
+          
+          if (formattedStartDate || formattedEndDate) {
+            query.OCC_DATE = {};
+            if (formattedStartDate) query.OCC_DATE.$gte = formattedStartDate;
+            if (formattedEndDate) query.OCC_DATE.$lte = formattedEndDate;
+          }
+        }
+        
+        console.log('MongoDB Query for break and enter by division:', JSON.stringify(query));
+        
+        const incidents = await BreakAndEnterIncident.find(query)
+          .limit(Math.min(limit, 500))
+          .skip(offset)
+          .maxTimeMS(30000)
+          .lean()
+          .exec();
+          
+        console.log(`Retrieved ${incidents.length} break and enter incidents in division ${division}`);
+        
+        // Double-check date filtering
+        if (startDate || endDate) {
+          const filteredIncidents = incidents.filter(incident => {
+            if (!incident.OCC_DATE || typeof incident.OCC_DATE !== "string") {
+              return false;
+            }
+            return isDateInRange(incident.OCC_DATE, startDate, endDate);
+          });
+          
+          console.log(`After additional date filtering, returning ${filteredIncidents.length} break and enter incidents in division ${division}`);
+          return filteredIncidents;
+        }
+        
+        return incidents;
+      } catch (error) {
+        console.error(`Error fetching break and enter incidents by division ${division}:`, error);
+        throw new Error(`Error fetching break and enter incidents by division: ${error.message}`);
+      }
+    },
     breakAndEnterIncidentsByNeighborhood: async (_, { neighborhood, startDate, endDate }) => {
       try {
+        console.log(`Fetching break and enter incidents for neighborhood ${neighborhood} with date range: ${startDate} - ${endDate}`);
+        
         // Get incidents by neighborhood
         const incidentsByNeighborhood = await BreakAndEnterIncident.find({ NEIGHBOURHOOD_158: neighborhood })
         console.log(
@@ -306,7 +364,12 @@ const resolvers = {
               return false
             }
 
-            return isDateInRange(incident.OCC_DATE, startDate, endDate)
+            try {
+              return isDateInRange(incident.OCC_DATE, startDate, endDate)
+            } catch (error) {
+              console.error(`Error in date filtering for incident ${incident._id}:`, error)
+              return false
+            }
           })
 
           console.log(
@@ -340,7 +403,7 @@ const resolvers = {
           }
         }
 
-        console.log('MongoDB Query:', JSON.stringify(query));
+        console.log('MongoDB Query for pedestrian KSI:', JSON.stringify(query));
 
         // Execute query with pagination and timeout
         const incidents = await PedestrianKSI.find(query)
@@ -351,23 +414,97 @@ const resolvers = {
           .exec();
 
         console.log(`Retrieved ${incidents.length} pedestrian KSI incidents`);
+        
+        // Double-check date filtering on the results
+        if (startDate || endDate) {
+          const filteredIncidents = incidents.filter(incident => {
+            if (!incident.DATE || typeof incident.DATE !== "string") {
+              return false;
+            }
+            return isDateInRange(incident.DATE, startDate, endDate);
+          });
+          
+          console.log(`After additional date filtering, returning ${filteredIncidents.length} pedestrian KSI incidents`);
+          return filteredIncidents;
+        }
+        
         return incidents;
       } catch (error) {
         console.error("Error fetching pedestrian KSI incidents:", error);
         throw new Error(`Error fetching pedestrian KSI incidents: ${error.message}`);
       }
     },
+    pedestrianKSIByDivision: async (_, { division, startDate, endDate, limit = 1000, offset = 0 }) => {
+      try {
+        console.log(`Fetching pedestrian KSI incidents for division ${division} with date range: ${startDate} - ${endDate}`);
+        
+        // Get incidents by division
+        const query = { DIVISION: division };
+        
+        if (startDate || endDate) {
+          const formattedStartDate = startDate ? formatDateForMongoDB(startDate) : null;
+          const formattedEndDate = endDate ? formatDateForMongoDB(endDate) : null;
+          
+          if (formattedStartDate || formattedEndDate) {
+            query.DATE = {};
+            if (formattedStartDate) query.DATE.$gte = formattedStartDate;
+            if (formattedEndDate) query.DATE.$lte = formattedEndDate;
+          }
+        }
+        
+        console.log('MongoDB Query for pedestrian KSI by division:', JSON.stringify(query));
+        
+        const incidents = await PedestrianKSI.find(query)
+          .limit(Math.min(limit, 500))
+          .skip(offset)
+          .maxTimeMS(30000)
+          .lean()
+          .exec();
+          
+        console.log(`Retrieved ${incidents.length} pedestrian KSI incidents in division ${division}`);
+        
+        // Double-check date filtering
+        if (startDate || endDate) {
+          const filteredIncidents = incidents.filter(incident => {
+            if (!incident.DATE || typeof incident.DATE !== "string") {
+              return false;
+            }
+            return isDateInRange(incident.DATE, startDate, endDate);
+          });
+          
+          console.log(`After additional date filtering, returning ${filteredIncidents.length} pedestrian KSI incidents in division ${division}`);
+          return filteredIncidents;
+        }
+        
+        return incidents;
+      } catch (error) {
+        console.error(`Error fetching pedestrian KSI incidents by division ${division}:`, error);
+        throw new Error(`Error fetching pedestrian KSI incidents by division: ${error.message}`);
+      }
+    },
     pedestrianKSIByNeighborhood: async (_, { neighborhood, startDate, endDate }) => {
       try {
+        console.log(`Fetching pedestrian KSI incidents for neighborhood ${neighborhood} with date range: ${startDate} - ${endDate}`);
+        
         // Get incidents by neighborhood
         const incidentsByNeighborhood = await PedestrianKSI.find({ NEIGHBOURHOOD_158: neighborhood })
         console.log(`Total pedestrian KSI incidents in neighborhood ${neighborhood}: ${incidentsByNeighborhood.length}`)
 
         // Filter by date range if provided
         if (startDate || endDate) {
-          const filteredIncidents = incidentsByNeighborhood.filter((incident) =>
-            isDateInRange(incident.DATE, startDate, endDate),
-          )
+          const filteredIncidents = incidentsByNeighborhood.filter((incident) => {
+            // Check if DATE exists and is a string
+            if (!incident.DATE || typeof incident.DATE !== "string") {
+              return false
+            }
+            
+            try {
+              return isDateInRange(incident.DATE, startDate, endDate)
+            } catch (error) {
+              console.error(`Error in date filtering for incident ${incident._id}:`, error)
+              return false
+            }
+          })
 
           console.log(
             `Filtered to ${filteredIncidents.length} pedestrian KSI incidents in neighborhood ${neighborhood} within date range`,

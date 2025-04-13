@@ -133,20 +133,24 @@ export const GET_BREAK_AND_ENTER_INCIDENTS = gql`
       _id
       OBJECTID
       EVENT_UNIQUE_ID
+      REPORT_DATE
       OCC_DATE
       OCC_YEAR
       OCC_MONTH
-      OCC_DOW
-      OCC_DOY
       OCC_DAY
+      OCC_DOW
       OCC_HOUR
       DIVISION
       LOCATION_TYPE
+      PREMISES_TYPE
       UCR_CODE
       UCR_EXT
       OFFENCE
-      DEATH
-      INJURIES
+      MCI_CATEGORY
+      HOOD_158
+      NEIGHBOURHOOD_158
+      HOOD_140
+      NEIGHBOURHOOD_140
       LAT_WGS84
       LONG_WGS84
       x
@@ -162,20 +166,24 @@ export const GET_BREAK_AND_ENTER_INCIDENTS_BY_NEIGHBORHOOD = gql`
       _id
       OBJECTID
       EVENT_UNIQUE_ID
+      REPORT_DATE
       OCC_DATE
       OCC_YEAR
       OCC_MONTH
-      OCC_DOW
-      OCC_DOY
       OCC_DAY
+      OCC_DOW
       OCC_HOUR
       DIVISION
       LOCATION_TYPE
+      PREMISES_TYPE
       UCR_CODE
       UCR_EXT
       OFFENCE
-      DEATH
-      INJURIES
+      MCI_CATEGORY
+      HOOD_158
+      NEIGHBOURHOOD_158
+      HOOD_140
+      NEIGHBOURHOOD_140
       LAT_WGS84
       LONG_WGS84
       x

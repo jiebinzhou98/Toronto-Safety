@@ -674,10 +674,12 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
               <h3>Break and Enter Incident</h3>
               <p>Event ID: {selectedBreakAndEnter.EVENT_UNIQUE_ID}</p>
               <p>Date: {selectedBreakAndEnter.OCC_DATE}</p>
+              <p>Report Date: {selectedBreakAndEnter.REPORT_DATE}</p>
               <p>Division: {selectedBreakAndEnter.DIVISION}</p>
               <p>Offense: {selectedBreakAndEnter.OFFENCE}</p>
-              <p>Death: {selectedBreakAndEnter.DEATH}</p>
-              <p>Injuries: {selectedBreakAndEnter.INJURIES}</p>
+              <p>Location Type: {selectedBreakAndEnter.LOCATION_TYPE}</p>
+              <p>Premises Type: {selectedBreakAndEnter.PREMISES_TYPE}</p>
+              <p>Neighborhood: {selectedBreakAndEnter.NEIGHBOURHOOD_158}</p>
             </div>
           </InfoWindow>
         )}
