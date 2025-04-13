@@ -24,7 +24,7 @@ const Navbar = () => {
         </li>
         {/* Always show the Discussion Board link */}
         <li>
-          <Link to="/discussion">Discussion Board</Link>
+          <Link to="/discussion">Community alerts</Link>
         </li>
 
         {/* Weather Safety Link */}

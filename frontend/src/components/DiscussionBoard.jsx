@@ -77,7 +77,7 @@ const DiscussionBoard = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h2 style={{ marginBottom: '10px' }}>Discussion Board</h2>
+      <h2 style={{ marginBottom: '10px' }}>Community Alerts</h2>
 
       <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
         <input
