@@ -158,7 +158,6 @@ function App() {
 
   const applyFilters = () => {
     console.log("Filters applied:", { activeFilters, dateRange, selectedDivision, selectedLocations });
-    setIsLoading(true);
   };
 
   // Handle multiple location selections

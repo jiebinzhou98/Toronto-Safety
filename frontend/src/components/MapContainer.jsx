@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api"
 import { useQuery } from "@apollo/client"
+import axios from "axios"
 import {
   GET_FATAL_ACCIDENTS,
   GET_SHOOTING_INCIDENTS,
@@ -373,6 +374,92 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     }
   }
 
+  // Process AI Map Assistant prompt
+  const processPrompt = async (prompt) => {
+    if (!prompt || !prompt.trim()) {
+      setPromptResult('Please enter a search query');
+      return;
+    }
+
+    setPromptResult('Processing your query...');
+    
+    try {
+      // Create API instance
+      const api = axios.create({
+        baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+        timeout: 30000,
+      });
+      
+      // Send prompt to backend for processing
+      const response = await api.post('/agent/chat', {
+        message: prompt
+      });
+      
+      // Set result
+      setPromptResult('Here are the results for your request');
+      
+      // Parse keywords to update map filters
+      const lowerPrompt = prompt.toLowerCase();
+      
+      // Handle filters based on incident types mentioned
+      const newFilters = { ...activeFilters };
+      
+      if (lowerPrompt.includes('fatal') || lowerPrompt.includes('accident')) {
+        newFilters.fatalAccidents = true;
+      }
+      
+      if (lowerPrompt.includes('shooting') || lowerPrompt.includes('gun')) {
+        newFilters.shootingIncidents = true;
+      }
+      
+      if (lowerPrompt.includes('homicide') || lowerPrompt.includes('murder')) {
+        newFilters.homicides = true;
+      }
+      
+      if (lowerPrompt.includes('break') || lowerPrompt.includes('enter') || lowerPrompt.includes('theft')) {
+        newFilters.breakAndEnterIncidents = true;
+      }
+      
+      if (lowerPrompt.includes('pedestrian') || lowerPrompt.includes('collision')) {
+        newFilters.pedestrianKSI = true;
+      }
+      
+      // If no specific types mentioned but "all" is, show everything
+      if (lowerPrompt.includes('all incidents') || lowerPrompt.includes('show all')) {
+        Object.keys(newFilters).forEach(key => {
+          newFilters[key] = true;
+        });
+      }
+      
+      // Update filters only if changes were made
+      if (JSON.stringify(newFilters) !== JSON.stringify(activeFilters)) {
+        updateActiveFilters(newFilters);
+      }
+      
+      // Check for division/location mentions
+      for (const [divId, name] of Object.entries(divisionNames)) {
+        if (lowerPrompt.includes(name.toLowerCase())) {
+          setSelectedDivision(divId);
+          break;
+        }
+      }
+      
+      // Look for year or date range mentions
+      const yearMatch = prompt.match(/\b(20\d\d)\b/);
+      if (yearMatch) {
+        const year = yearMatch[1];
+        setDateRange({
+          startDate: `${year}-01-01`,
+          endDate: `${year}-12-31`
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error processing prompt:', error);
+      setPromptResult('Sorry, I could not process your request. Please try again.');
+    }
+  };
+
   if (!isLoaded) return <div>Loading Maps...</div>
 
   return (
@@ -409,13 +496,13 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
             }}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                // processPrompt(promptInput)
+                processPrompt(promptInput);
               }
             }}
           />
           <button
             onClick={() => {
-              // processPrompt(promptInput)
+              processPrompt(promptInput);
             }}
             style={{
               backgroundColor: "#4285F4",
@@ -430,6 +517,18 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
             Search
           </button>
         </div>
+        {promptResult && (
+          <div style={{ 
+            backgroundColor: "#f5f5f5", 
+            padding: "10px", 
+            borderRadius: "4px",
+            fontSize: "13px",
+            maxHeight: "200px",
+            overflowY: "auto"
+          }}>
+            {promptResult}
+        </div>
+      )}
       </div>
 
       {/* Location filter info */}
@@ -573,8 +672,8 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
                 }}
               />
           ) : null
-        )}
-        
+          )}
+
         {/* InfoWindow that stays attached to the marker */}
         {selectedMarker && (
           <InfoWindow

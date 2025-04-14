@@ -5,13 +5,13 @@ const EmergencyContact = require('../models/EmergencyContact');
 require('dotenv').config();
 
 // Enhanced initialization with better error handling
-console.log('GEMINI_API_KEY status in emergencyRoutes:', process.env.GEMINI_API_KEY ? 'Present (length: ' + process.env.GEMINI_API_KEY.length + ')' : 'Missing');
+console.log('GEMINI_API_KEY status:', process.env.GEMINI_API_KEY ? 'Present (length: ' + process.env.GEMINI_API_KEY.length + ')' : 'Missing');
 
 let genAI = null;
 try {
   if (process.env.GEMINI_API_KEY) {
     genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    console.log('Successfully initialized Gemini AI client in emergencyRoutes');
+    console.log('Successfully initialized Gemini AI client');
   } else {
     console.error('GEMINI_API_KEY is missing in environment variables');
   }
@@ -168,7 +168,7 @@ router.post('/parseQuery', async (req, res) => {
 
 // New endpoint: Generate safety predictions
 router.post('/predict', async (req, res) => {
-  console.log('⭐ Predict endpoint called in emergency routes with data:', {
+  console.log('⭐ Predict endpoint called with data:', {
     date: req.body.date,
     location: req.body.location,
     incidentType: req.body.incidentType,
@@ -180,7 +180,7 @@ router.post('/predict', async (req, res) => {
       throw new Error('Gemini AI not initialized - check API key');
     }
 
-    const { date, location, incidentType, historicalData, useLocalDataOnly } = req.body;
+    const { date, location, incidentType, useLocalDataOnly } = req.body;
     
     if (!date || !location || !incidentType) {
       return res.status(400).json({ 
@@ -484,7 +484,6 @@ function generateFallbackPrediction(relevantIncidents, totalIncidents, incidentT
   };
 }
 
-// Add the generateLocalPrediction function after generateFallbackPrediction
 // Helper function for generating predictions based on local data only
 function generateLocalPrediction(incidentType, date, location) {
   const dateObj = new Date(date);

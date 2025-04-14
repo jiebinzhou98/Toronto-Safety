@@ -11,6 +11,7 @@ const homicideRoutes = require('./routes/Homicide');
 const agentRoutes = require('./routes/agentRoutes');
 const weatherRoutes = require('./routes/weatherRoutes');
 const emergencyRoutes = require('./routes/emergencyRoutes');
+const emergencyRoutesFixed = require('./routes/emergencyRoutesFixed');
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -102,10 +103,12 @@ async function startServer() {
     app.use('/api/agent', agentRoutes);
     app.use('/api/weather', weatherRoutes);
     app.use('/api/emergency', emergencyRoutes);
+    app.use('/api/emergencyFixed', emergencyRoutesFixed);
   } else {
     app.use('/api/agent', authenticateJWT, agentRoutes);
     app.use('/api/weather', authenticateJWT, weatherRoutes);
     app.use('/api/emergency', authenticateJWT, emergencyRoutes);
+    app.use('/api/emergencyFixed', authenticateJWT, emergencyRoutesFixed);
   }
   
   // Apply Apollo middleware with CORS
