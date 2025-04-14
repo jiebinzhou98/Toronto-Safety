@@ -6,7 +6,8 @@ import { setContext } from '@apollo/client/link/context'
 import { ClerkProvider } from '@clerk/clerk-react'
 
 const httpLink = createHttpLink({
-  uri: 'http://localhost:5000/graphql',
+  // uri: 'http://localhost:5000/graphql',
+  uri: import.meta.env.VITE_GRAPHQL_URL,
   credentials: 'include'
 });
 
