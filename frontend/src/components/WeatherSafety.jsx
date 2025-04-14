@@ -48,7 +48,7 @@ const WeatherSafety = () => {
             // Toronto coordinates
             const lat = 43.6532;
             const lon = -79.3832;
-            const response = await fetch(`http://localhost:5000/api/weather/current?lat=${lat}&lon=${lon}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/weather/current?lat=${lat}&lon=${lon}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch weather data');
             }
