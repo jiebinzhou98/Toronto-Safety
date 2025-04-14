@@ -42,28 +42,28 @@ const retryLink = new RetryLink({
 });
 
 // Create HTTP link
-const httpLink = new HttpLink({
-  uri: 'http://localhost:5000/graphql',
-  
-  credentials: 'same-origin'
-});
+// const httpLink = new HttpLink({
+//   uri: 'http://localhost:5000/graphql',
+
+//   credentials: 'same-origin'
+// });
 
 // Create Apollo Client
-const client = new ApolloClient({
-  link: from([errorLink, retryLink, httpLink]),
-  cache: new InMemoryCache(),
-  defaultOptions: {
-    watchQuery: {
-      fetchPolicy: 'network-only',
-      nextFetchPolicy: 'cache-first',
-      errorPolicy: 'all',
-    },
-    query: {
-      fetchPolicy: 'network-only',
-      errorPolicy: 'all',
-    },
-  },
-});
+// const client = new ApolloClient({
+//   link: from([errorLink, retryLink, httpLink]),
+//   cache: new InMemoryCache(),
+//   defaultOptions: {
+//     watchQuery: {
+//       fetchPolicy: 'network-only',
+//       nextFetchPolicy: 'cache-first',
+//       errorPolicy: 'all',
+//     },
+//     query: {
+//       fetchPolicy: 'network-only',
+//       errorPolicy: 'all',
+//     },
+//   },
+// });
 
 function WelcomePage() {
   const { openSignIn } = useAuth();
@@ -167,7 +167,7 @@ function App() {
   };
 
   return (
-    <ApolloProvider client={client}>
+    // <ApolloProvider client={client}>
       <Router>
         <div className="App">
           <SignedIn>
@@ -220,7 +220,7 @@ function App() {
           {isLoading && <LoadingIndicator />}
         </div>
       </Router>
-    </ApolloProvider>
+    // </ApolloProvider>
   );
 }
 
