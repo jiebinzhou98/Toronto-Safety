@@ -52,7 +52,7 @@ const authenticateJWT = (req, res, next) => {
 
 // CORS configuration
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'https://toronto-safety.onrender.com'], // Allow both ports
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'https://toronto-safety.vercel.app'], // Allow both ports
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
