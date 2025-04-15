@@ -95,7 +95,9 @@ async function startServer() {
 
   // Apply middleware
   app.use(cors(corsOptions))
+  app.options('*', cors(corsOptions))
   app.use(express.json())
+
   
   // Development bypass for testing
   if (process.env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
