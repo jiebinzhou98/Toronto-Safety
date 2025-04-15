@@ -386,8 +386,8 @@ function MapContainer({ activeFilters = {}, dateRange = { startDate: "", endDate
     try {
       // Create API instance
       const api = axios.create({
-        baseURL: import.meta.env.VITE_API_URL,
-        timeout: 30000,
+        baseURL: import.meta.env.VITE_API_URL || 'https://toronto-safety.onrender.com/api',
+        timeout: 60000,
       });
       
       // Send prompt to backend for processing
